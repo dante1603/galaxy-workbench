@@ -1,0 +1,354 @@
+
+{
+  "SYSTEM_TEMPLATE": {
+    "id": "SYS_template_id_unico",
+    "nombre": "Nombre Provisional del Sistema",
+    "cuerpoCentral": {},
+    "orbitas": []
+  },
+  "STAR_TEMPLATE": {
+    "tipo": "ESTRELLA",
+    "id": "STAR_template_id_unico",
+    "nombreProvisional": "Nombre Provisional Estrella",
+    "tipoBase": "solar",
+    "masaRelativa": "media",
+    "radioRelativo": "medio",
+    "luminosidadRelativa": "media",
+    "temperaturaSuperficial": "media",
+    "edadEstelar": "adulta",
+    "metalicidad": "media",
+    "actividad": "calma",
+    "colorPrincipal": "amarillo/blanco",
+    "colorSecundario": ["blanco"],
+    "colorCieloPlanetario": "azul claro",
+    "colorHex": "#fff2a1",
+    "intensidadColor": "neutra",
+    "tipoIluminacion": "suave",
+    "tipoSistema": {
+      "numPlanetasEstimado": [3, 7],
+      "probabilidadLunas": "alta",
+      "probabilidadCinturonAsteroides": "media"
+    },
+    "cristales": {
+      "fuego": "medio",
+      "hielo": "medio",
+      "electrico": "medio",
+      "gravedad": "bajo",
+      "luz": "medio",
+      "radioactivo": "muy_bajo",
+      "magico": "bajo",
+      "purezaMedia": "media"
+    },
+    "peligros": ["Pocos peligros estelares sistémicos"],
+    "atractivosSistema": ["Sistemas balanceados", "Variedad de biomas clásicos"]
+  },
+  "SPECIAL_BODY_TEMPLATE": {
+    "tipo": "AGUJERO_NEGRO",
+    "id": "BH_template_id_unico",
+    "nombre": "Nombre del Cuerpo Especial",
+    "masaMs": 10,
+    "spin": 0.8,
+    "periodoSpinMs": 10,
+    "campoMagneticoT": 100000000,
+    "peligros": ["Horizonte de sucesos mortal", "Espaguetización"],
+    "atractivosSistema": ["Acceso a materiales raros"]
+  },
+  "ORBIT_TEMPLATE": {
+    "id": "ORB_template_id_unico",
+    "indiceOrbita": 1,
+    "a_UA": 1.0,
+    "e": 0.016,
+    "i_deg": 0.0,
+    "omega_deg": 102.9,
+    "Omega_deg": -11.2,
+    "M0_deg": 358.6,
+    "objetos": []
+  },
+  "PLANET_OBJECT_TEMPLATE": {
+    "id": "PL_template_id_unico",
+    "tipo": "PLANETA",
+    "cargaUtil": {}
+  },
+  "ASTEROID_BELT_OBJECT_TEMPLATE": {
+    "id": "AB_template_id_unico",
+    "tipo": "CINTURON_ASTEROIDES",
+    "cargaUtil": {
+      "composicion": "rocoso",
+      "densidad": "moderado"
+    }
+  },
+  "PLANET_PAYLOAD_TEMPLATE": {
+    "tipoPlaneta": "JUNGLA",
+    "tituloTipoPlaneta": "Planeta Selvático",
+    "subOrbitas": [],
+    "biomas": [],
+    "cristales": [{"tipo": "LUZ", "pureza": 0.75}],
+    "atmosfera": {
+      "composicion": "Nitrógeno, Oxígeno, Argón",
+      "notas": "Respirable para formas de vida basadas en carbono."
+    },
+    "composicionGlobal": {
+      "roca": 0.6,
+      "metal": 0.3,
+      "hielo": 0.1
+    },
+    "nombre": "Nombre Opcional del Planeta",
+    "tags": ["habitable", "oxigeno"],
+    "gravedad": "medium",
+    "presion": "medium",
+    "tipoAtmosfera": "breathable",
+    "rangoTemperaturaC": [20, 30],
+    "rangoHumedad": [0.7, 0.9],
+    "distribucionBiomas": [
+      { "biomeId": "biome_template_id_unico", "coverage": 1.0 }
+    ],
+    "peligrosPlanetarios": ["Fauna hostil"],
+    "densidadVida": "high"
+  },
+  "MOON_OBJECT_TEMPLATE": {
+    "id": "MOON_template_id_unico",
+    "tipo": "LUNA",
+    "cargaUtil": {
+      "nombre": "Nombre de la Luna",
+      "descripcion": "Descripción de la luna.",
+      "tipo": "rocosa"
+    }
+  },
+  "RING_OBJECT_TEMPLATE": {
+    "id": "RING_template_id_unico",
+    "tipo": "ANILLO",
+    "cargaUtil": {
+      "composicion": "hielo",
+      "densidad": "tenue"
+    }
+  },
+  "BIOME_TEMPLATE": {
+    "id": "biome_template_id_unico",
+    "nombre": "Nombre del Bioma",
+    "descripcion": "Descripción del bioma, su apariencia y características.",
+    "categoria": "BOSQUE",
+    "tags": ["terrestre"],
+    "faunaPosible": ["f_id_fauna_1", "f_id_fauna_2"],
+    "floraPosible": ["p_id_planta_1"],
+    "mineralesPosibles": ["min_id_mineral_1"],
+    "clima": {
+      "rangoTemperaturaC": [15, 25],
+      "rangoHumedad": [0.6, 0.8],
+      "rangoAltitud": [100, 800]
+    },
+    "nivelLuz": "normal",
+    "peligros": ["Terreno irregular"],
+    "densidad": {
+      "densidadFauna": "medium",
+      "densidadFlora": "high",
+      "riquezaRecursos": "medium"
+    }
+  },
+  "FAUNA_TEMPLATE": {
+    "id": "f_template_id_unico",
+    "nombre": "Nombre de la Criatura",
+    "descripcion": "Descripción detallada de la criatura. Incluye apariencia física, comportamiento general, hábitat y cualquier característica especial.",
+    "tags": ["BIOMA_PRINCIPAL", "CARACTERISTICA_CLAVE"],
+    "reino": "mamifero",
+    "tamano": "medio",
+    "locomocion": "terrestre",
+    "formaCorporal": "vertebrado",
+    "cantidadExtremidades": 4,
+    "tipoExtremidadesDelanteras": "garras",
+    "tieneCola": true,
+    "utilidadCola": ["equilibrio"],
+    "dieta": "carnivoro",
+    "comportamientoSocial": "solitario",
+    "temperamento": "territorial",
+    "rolCombate": ["dps_cuerpo_a_cuerpo"],
+    "utilidad": [],
+    "drops": [
+      {
+        "materialId": "id_del_material",
+        "min": 1,
+        "max": 2,
+        "chance": 0.75
+      }
+    ],
+    "biomeIds": ["BIOMA_PRINCIPAL"],
+    "nivelAmenaza": 3,
+    "stats": {
+      "salud": 100,
+      "dano": 12,
+      "velocidad": 4,
+      "rangoPercepcion": 20,
+      "rangoAgresividad": 15
+    },
+    "idPerfilIA": null
+  },
+  "PLANT_TEMPLATE": {
+    "id": "p_template_id_unico",
+    "nombre": "Nombre de la Planta",
+    "descripcion": "Descripción de la planta, dónde crece y sus propiedades.",
+    "tags": ["BIOMA_PRINCIPAL", "TIPO_RECURSO"],
+    "materiales": ["id_material_1", "id_material_2"],
+    "tipoPlanta": "bush",
+    "biomeIds": ["BIOMA_PRINCIPAL"],
+    "etapasCrecimiento": 3,
+    "reglasCosecha": {
+      "herramientaRequeridaId": null,
+      "rendimiento": [{ "itemId": "id_material_1", "cantidad": [1, 3] }],
+      "tiempoRecrecimiento": 600
+    }
+  },
+  "MINERAL_TEMPLATE": {
+    "id": "min_template_id_unico",
+    "nombre": "Nombre del Mineral",
+    "descripcion": "Descripción del mineral, su apariencia y dónde se encuentra.",
+    "tags": ["BIOMA_DONDE_APARECE"],
+    "rareza": "common",
+    "tier": 1,
+    "valorBase": 10,
+    "spawn": {
+      "planetIds": [],
+      "biomeIds": ["BIOMA_DONDE_APARECE"],
+      "depthRange": [0, 100]
+    }
+  },
+  "MATERIAL_TEMPLATE": {
+    "id": "mat_template_id_unico",
+    "nombre": "Nombre del Material",
+    "descripcion": "Descripción del material y sus usos principales (crafteo, alquimia, etc.).",
+    "tags": ["tag_de_uso"],
+    "origen": "mineral",
+    "rareza": "common",
+    "tier": 1,
+    "valorBase": 5,
+    "spawn": {
+      "planetIds": [],
+      "biomeIds": [],
+      "depthRange": [0, 100]
+    }
+  },
+  "CRYSTAL_ARCHETYPE_TEMPLATE": {
+    "id": "c_template_id_unico",
+    "nombre": "Nombre del Cristal",
+    "descripcion": "Descripción del arquetipo de cristal.",
+    "tags": ["BIOMA_OPCIONAL"],
+    "tipoCristal": "FUEGO",
+    "rareza": "uncommon",
+    "tier": 2,
+    "valorBase": 25,
+    "spawn": {
+      "planetIds": [],
+      "biomeIds": ["BIOMA_OPCIONAL"],
+      "depthRange": [50, 200]
+    },
+    "elemento": "FIRE",
+    "potenciaBase": 10,
+    "escalado": "LINEAR",
+    "tiposArmaCompatibles": ["espada"],
+    "tiposHerramientaCompatibles": ["pico"]
+  },
+  "INTELLIGENT_SPECIES_TEMPLATE": {
+    "id": "species_template_id_unico",
+    "nombre": "Nombre de la Especie",
+    "descripcion": "Breve descripción de la especie.",
+    "tags": ["tag1", "tag2"],
+    "colorClave": "#3b82f6",
+    "lore": [
+      "Punto 1 del lore.",
+      "Punto 2 del lore."
+    ],
+    "reglasGameplay": [
+      { "titulo": "Nombre Habilidad Pasiva", "descripcion": "Descripción de la habilidad pasiva." },
+      { "titulo": "Nombre Habilidad Activa", "descripcion": "Descripción de la habilidad activa." }
+    ],
+    "debilidades": ["Debilidad 1.", "Debilidad 2."],
+    "restriccionesDiseno": ["Restricción de diseño 1.", "Restricción de diseño 2."],
+    "planetasComunes": ["ACUATICO"],
+    "urlImagen": null,
+    "modificadoresStatsBase": { "salud": 10, "aguante": 5 },
+    "biomasInicio": ["ACUATICO"],
+    "metabolismo": {
+      "dieta": "carnivoro",
+      "entornosFavorables": ["acuatico", "humedo"],
+      "entornosDesfavorables": ["arido"]
+    },
+    "afinidadCristales": ["HIELO", "ELECTRICO"]
+  },
+  "PLAYER_TEMPLATE": {
+    "id": "player_base",
+    "nombre": "Jugador Arquetipo",
+    "descripcion": "Plantilla base para un personaje jugable.",
+    "tags": ["jugador"],
+    "statsBase": {
+      "salud": 100,
+      "aguante": 100,
+      "ataque": 10,
+      "defensa": 5,
+      "velocidadMovimiento": 5,
+      "capacidadCarga": 100,
+      "resistencias": {}
+    },
+    "especieId": "species_id_opcional",
+    "itemsInicio": [
+      { "itemId": "id_item_inicial", "cantidad": 1 }
+    ]
+  },
+  "WEAPON_TEMPLATE": {
+    "id": "w_template_id_unico",
+    "nombre": "Nombre del Arma",
+    "descripcion": "Descripción del arma.",
+    "tags": ["arma", "cuerpo_a_cuerpo", "avanzado"],
+    "tipoArma": "espada",
+    "dano": 15,
+    "velocidad": "normal",
+    "alcance": "corta",
+    "tier": 1,
+    "rareza": "common",
+    "durabilidad": 100,
+    "tiposCristalCompatibles": ["FUEGO"],
+    "idPatronAtaque": null,
+    "objetivosPermitidos": ["fauna", "jugador"]
+  },
+  "TOOL_TEMPLATE": {
+    "id": "t_template_id_unico",
+    "nombre": "Nombre de la Herramienta",
+    "descripcion": "Descripción de la herramienta y su uso.",
+    "tags": ["herramienta", "mineria"],
+    "tipoHerramienta": "pico",
+    "eficiencia": 1.5,
+    "durabilidad": 150,
+    "tier": 1,
+    "rareza": "common",
+    "tiposCristalCompatibles": [],
+    "idPatronAtaque": null,
+    "objetivosPermitidos": ["recursos"]
+  },
+  "RECIPE_TEMPLATE": {
+    "id": "r_template_id_unico",
+    "resultado": {
+      "itemId": "id_del_item_resultante",
+      "cantidad": 1
+    },
+    "ingredientes": [
+      { "itemId": "id_material_1", "cantidad": 2 },
+      { "itemId": "id_material_2", "cantidad": 1 }
+    ],
+    "tags": ["basico", "armamento"],
+    "idEstacionCrafteo": null,
+    "tiempoCrafteo": 5,
+    "requisitoHabilidad": null
+  },
+  "EFFECT_TEMPLATE": {
+    "id": "effect_template_id_unico",
+    "nombre": "Nombre del Efecto",
+    "descripcion": "Descripción de lo que hace el efecto.",
+    "tipoEfecto": "BUFF",
+    "tags": ["daño_elemental", "fuego", "dot"],
+    "mecanicasGameplay": [
+      "Descripción mecánica 1 (ej: Inflige 2 de daño por segundo).",
+      "Descripción mecánica 2 (ej: Reduce la curación en 25%)."
+    ],
+    "duracion": 10,
+    "magnitud": 5,
+    "maxAcumulaciones": 3,
+    "aplicaA": ["fauna", "jugador"]
+  }
+}

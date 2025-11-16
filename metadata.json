@@ -1,0 +1,5 @@
+{
+  "name": "Galaxy Workbench – Star Generator",
+  "description": "A procedural generation tool to create solar systems. This version focuses on generating stars based on astronomical data, with an empty planet array for future expansion.",
+  "requestFramePermissions": []
+}

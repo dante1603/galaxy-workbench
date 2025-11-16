@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galaxy Workbench – Star Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'space-dark': '#0f172a',
+              'space-mid': '#1e293b',
+              'space-light': '#334155',
+              'accent-cyan': '#06b6d4',
+              'accent-amber': '#f59e0b',
+            },
+            fontFamily: {
+              'sans': ['Inter', 'sans-serif'],
+              'mono': ['Fira Code', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- 
+    The importmap allows us to use bare module specifiers (e.g., "react") in our JavaScript modules
+    without a build step like Webpack or Vite. It tells the browser where to find each module,
+    effectively managing dependencies on the client-side. This is ideal for rapid prototyping
+    and development environments like AI Studio.
+  -->
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+    "webworker": "https://aistudiocdn.com/webworker@^0.8.4",
+    "three": "https://aistudiocdn.com/three@^0.181.1",
+    "three/addons/": "https://aistudiocdn.com/three@^0.181.1/examples/jsm/",
+    "zustand": "https://aistudiocdn.com/zustand@^4.5.2",
+    "three/": "https://aistudiocdn.com/three@^0.181.1/"
+  }
+}
+</script>
+</head>
+  <body class="bg-space-dark text-slate-200 font-sans">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
