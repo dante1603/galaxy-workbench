@@ -1,3 +1,4 @@
+
 /**
  * @file starGenerator.ts
  * @description This service is the core of the procedural generation engine.
@@ -10,10 +11,10 @@ import type {
   Estrella, Sistema, CuerpoEspecial, Orbita, ObjetoOrbital, CargaUtilPlaneta,
   TipoPlaneta, Cristal, Probabilidad, TipoCristal, CargaUtilCinturonAsteroides,
   ObjetoSubOrbitalPlaneta, CargaUtilLuna, CargaUtilAnillo, Bioma, CategoriaBiome,
-  TipoEstrella, EntidadBase, TipoCuerpoCentral, NivelRelativo, DistribucionBioma
+  TipoEstrella, EntidadBase, TipoCuerpoCentral, NivelRelativo, DistribucionBioma, Ecosistema
 } from '../types';
 import { TABLA_ESTRELLAS, CONFIG_CUERPO_CENTRAL, CONFIG_ORBITA } from '../constants/starTables';
-import { getAllBiomes } from './dataService';
+import { getAllBiomes, getAllFauna, getAllPlants, getAllMinerals } from './dataService';
 import { GREEK_LETTERS, CONSTELLATION_GENITIVES } from '../constants/starNames';
 import { roundTo, randRange, pick, id, weightedPick, randInt } from '../utils/helpers';
 
@@ -58,15 +59,126 @@ const probToWeight = (prob: Probabilidad): number => {
   }
 };
 
+// --- GENERACIÓN DE ECOSISTEMA (CADENA TRÓFICA) ---
+
+/**
+ * Generates a cohesive ecosystem based on biome constraints and biological dependencies.
+ */
+const generarEcosistema = async (biome: Bioma): Promise<Ecosistema> => {
+  const ALL_FAUNA = await getAllFauna();
+  const ALL_PLANTS = await getAllPlants();
+  const ALL_MINERALS = await getAllMinerals();
+
+  const ecosistema: Ecosistema = {
+    minerales: [],
+    flora: { arboles: [], arbustos: [], cobertura: [], especiales: [] },
+    fauna: { 
+        depredadoresApex: [], depredadoresPequenos: [], 
+        presasGrandes: [], presasMedianas: [], presasPequenas: [], 
+        carroneros: [] 
+    }
+  };
+
+  // 1. MINERALES (Base del suelo)
+  // Prioridad: Minerales compatibles con el tipo de suelo > Tags coincidentes > Lista explícita
+  const mineralesCompatibles = ALL_MINERALS.filter(m => 
+      (m.suelosCompatibles && m.suelosCompatibles.includes(biome.tipoSuelo)) ||
+      m.tags.includes(biome.categoria) || 
+      biome.mineralesPosibles.includes(m.id)
+  );
+
+  if (mineralesCompatibles.length > 0) {
+      ecosistema.minerales.push(pick(mineralesCompatibles).id);
+      // Chance extra mineral
+      if (Math.random() > 0.5) ecosistema.minerales.push(pick(mineralesCompatibles).id);
+  }
+
+  // 2. FLORA (Productores)
+  // Seleccionar plantas compatibles con el bioma
+  const floraCompatible = ALL_PLANTS.filter(p => 
+      p.biomeIds.includes(biome.id) || p.tags.includes(biome.categoria)
+  );
+
+  // Rellenar Slots de Flora
+  const arboles = floraCompatible.filter(p => p.estructura === 'arborea' || p.estructura === 'hongo' || p.estructura === 'succulenta_gigante');
+  const arbustos = floraCompatible.filter(p => p.estructura === 'arbustiva' || p.estructura === 'liana');
+  const cobertura = floraCompatible.filter(p => p.estructura === 'herbacea' || p.estructura === 'acuatica_flotante');
+  const especiales = floraCompatible.filter(p => p.estructura === 'parasita' || p.estructura === 'epifita' || p.estructura === 'acuatica_sumergida');
+
+  if (arboles.length > 0) ecosistema.flora.arboles.push(pick(arboles).id);
+  if (arbustos.length > 0) ecosistema.flora.arbustos.push(pick(arbustos).id);
+  if (cobertura.length > 0) ecosistema.flora.cobertura.push(pick(cobertura).id);
+  if (especiales.length > 0 && Math.random() > 0.3) ecosistema.flora.especiales.push(pick(especiales).id);
+
+
+  // 3. FAUNA HERBIVORA (Consumidores Primarios)
+  // Filtro: Debe ser herbívoro Y ser compatible con el bioma
+  // (Simplificación: Asumimos que si el bioma coincide, pueden comer la flora local)
+  const herbivorosCompatibles = ALL_FAUNA.filter(f => 
+      (f.dieta === 'herbivoro' || f.dieta === 'omnivoro' || f.dieta === 'litotrofico') && 
+      (f.biomeIds.includes(biome.id) || f.tags.includes(biome.categoria))
+  );
+
+  const presasGrandes = herbivorosCompatibles.filter(f => f.tamano === 'grande' || f.tamano === 'muy_grande' || f.tamano === 'colosal');
+  const presasMedianas = herbivorosCompatibles.filter(f => f.tamano === 'medio');
+  const presasPequenas = herbivorosCompatibles.filter(f => f.tamano === 'pequeno' || f.tamano === 'diminuto');
+
+  // Solo añadir herbívoros si hay plantas (o son litotróficos)
+  const hayComidaVegetal = ecosistema.flora.arboles.length > 0 || ecosistema.flora.arbustos.length > 0 || ecosistema.flora.cobertura.length > 0;
+  
+  if (hayComidaVegetal) {
+      if (presasGrandes.length > 0) ecosistema.fauna.presasGrandes.push(pick(presasGrandes).id);
+      if (presasMedianas.length > 0) ecosistema.fauna.presasMedianas.push(pick(presasMedianas).id);
+      if (presasPequenas.length > 0) ecosistema.fauna.presasPequenas.push(pick(presasPequenas).id);
+  }
+
+  // 4. FAUNA CARNIVORA (Depredadores)
+  // Filtro: Carnívoros compatibles con el bioma
+  const carnivorosCompatibles = ALL_FAUNA.filter(f => 
+      (f.dieta === 'carnivoro' || f.dieta === 'omnivoro') && 
+      (f.biomeIds.includes(biome.id) || f.tags.includes(biome.categoria))
+  );
+
+  // Lógica Depredador Apex: Necesita presas grandes o medianas
+  const hayPresasGrandes = ecosistema.fauna.presasGrandes.length > 0 || ecosistema.fauna.presasMedianas.length > 0;
+  
+  const apexCandidates = carnivorosCompatibles.filter(f => (f.tamano === 'grande' || f.tamano === 'muy_grande' || f.tamano === 'colosal') && f.rolCombate.includes('jefe') || f.rolCombate.includes('tanque'));
+  const smallPredCandidates = carnivorosCompatibles.filter(f => f.tamano === 'pequeno' || f.tamano === 'medio');
+
+  if (hayPresasGrandes && apexCandidates.length > 0) {
+      ecosistema.fauna.depredadoresApex.push(pick(apexCandidates).id);
+  }
+
+  if ((ecosistema.fauna.presasPequenas.length > 0 || ecosistema.fauna.presasMedianas.length > 0) && smallPredCandidates.length > 0) {
+      ecosistema.fauna.depredadoresPequenos.push(pick(smallPredCandidates).id);
+  }
+
+  // 5. DESCOMPONEDORES
+  const carroneros = ALL_FAUNA.filter(f => f.dieta === 'carronero' && (f.biomeIds.includes(biome.id) || f.tags.includes(biome.categoria)));
+  if (carroneros.length > 0) {
+      ecosistema.fauna.carroneros.push(pick(carroneros).id);
+  }
+
+  return ecosistema;
+};
+
+
 // --- GENERACIÓN DE CARGAS ÚTILES Y SUB-ÓRBITAS ---
 
 /** Generates the payload data for a moon. */
-const generarCargaUtilLuna = (): CargaUtilLuna => {
+const generarCargaUtilLuna = (todosBiomas: Bioma[]): CargaUtilLuna => {
     const tipoLuna = pick<'rocosa' | 'helada' | 'volcanica'>(['rocosa', 'helada', 'volcanica']);
+    const biomasInospitos = todosBiomas.filter(b => b.categoria === 'INOSPITO');
+    if (biomasInospitos.length === 0) {
+        throw new Error("No biomes of category 'INOSPITO' found to generate a moon.");
+    }
+    const biomaLuna = pick(biomasInospitos);
+    
     return {
         nombre: `Luna ${tipoLuna.charAt(0).toUpperCase() + tipoLuna.slice(1)}`,
-        descripcion: "Una luna común, encontrada a lo largo de la galaxia.",
+        descripcion: `Una luna ${tipoLuna} con un bioma inhóspito.`,
         tipo: tipoLuna,
+        biomeId: biomaLuna.id,
     };
 };
 
@@ -83,7 +195,7 @@ const generarCargaUtilAnillo = (): CargaUtilAnillo => {
  * @param planeta The planet payload to generate sub-orbits for.
  * @returns An array of sub-orbital objects.
  */
-const generarSubOrbitas = (planeta: CargaUtilPlaneta): ObjetoSubOrbitalPlaneta[] => {
+const generarSubOrbitas = (planeta: CargaUtilPlaneta, todosBiomas: Bioma[]): ObjetoSubOrbitalPlaneta[] => {
     const subOrbitas: ObjetoSubOrbitalPlaneta[] = [];
     const esGiganteGaseoso = planeta.tipoPlaneta === "GIGANTE_GASEOSO";
 
@@ -108,7 +220,7 @@ const generarSubOrbitas = (planeta: CargaUtilPlaneta): ObjetoSubOrbitalPlaneta[]
             id: idLuna,
             ...crearMetadatosBase(idLuna),
             tipo: 'LUNA',
-            cargaUtil: generarCargaUtilLuna(),
+            cargaUtil: generarCargaUtilLuna(todosBiomas),
         });
     }
 
@@ -180,7 +292,7 @@ const generarCargaUtilPlaneta = async (cuerpoCentral: Estrella | CuerpoEspecial,
         const categoriasPosibles = categoriasPorTipoPlaneta[tipoPlaneta] || [];
         const biomasDisponibles = TODOS_BIOMAS.filter(b => categoriasPosibles.includes(b.categoria));
         
-        const numBiomas = randInt(2, Math.min(4, biomasDisponibles.length));
+        const numBiomas = randInt(1, Math.min(3, biomasDisponibles.length));
         
         const biomasSeleccionados = new Set<Bioma>();
         const biomasDisponiblesCopia = [...biomasDisponibles];
@@ -204,6 +316,14 @@ const generarCargaUtilPlaneta = async (cuerpoCentral: Estrella | CuerpoEspecial,
             }
             distribucionBiomas.push({ biomeId: biomas[biomas.length - 1].id, coverage: roundTo(remainingCoverage, 2) });
         }
+    }
+
+    // Generate Ecosystem based on the PRIMARY biome
+    let ecosistema: Ecosistema | undefined = undefined;
+    if (biomas.length > 0) {
+        // We use the most dominant biome for the main ecosystem generation for simplicity
+        const mainBiome = biomas[0]; 
+        ecosistema = await generarEcosistema(mainBiome);
     }
 
     // Generate crystals based on the parent star's crystal probabilities.
@@ -250,6 +370,7 @@ const generarCargaUtilPlaneta = async (cuerpoCentral: Estrella | CuerpoEspecial,
         tituloTipoPlaneta: titulo,
         subOrbitas: [],
         biomas: biomas,
+        ecosistema: ecosistema, // Assign the generated food web
         cristales: cristalesPlaneta,
         atmosfera: { composicion: esGiganteGaseoso ? "Hidrógeno, Helio" : "desconocida" },
         composicionGlobal: { roca, metal, hielo },
@@ -264,7 +385,7 @@ const generarCargaUtilPlaneta = async (cuerpoCentral: Estrella | CuerpoEspecial,
         densidadVida: esGiganteGaseoso || biomas.length === 0 ? 'none' : pick(['low', 'medium', 'high']),
     };
     
-    cargaUtil.subOrbitas = generarSubOrbitas(cargaUtil);
+    cargaUtil.subOrbitas = generarSubOrbitas(cargaUtil, TODOS_BIOMAS);
     return cargaUtil;
 };
 

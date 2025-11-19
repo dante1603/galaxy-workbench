@@ -1,5 +1,6 @@
+
 import React from 'react';
-import type { TipoPlaneta, TipoCristal } from '../../types';
+import type { TipoPlaneta, TipoCristal, EstructuraPlanta, FollajePlanta, ReproduccionPlanta } from '../../types';
 
 export const CRYSTAL_COLORS: Record<TipoCristal, string> = {
   FUEGO: '#ef4444',       // red-500
@@ -9,6 +10,31 @@ export const CRYSTAL_COLORS: Record<TipoCristal, string> = {
   LUZ: '#f1f5f9',         // slate-100
   GRAVEDAD: '#475569',    // slate-600
   RADIOACTIVO: '#4ade80',// green-400
+};
+
+export const PLANT_STRUCTURE_COLORS: Record<EstructuraPlanta, string> = {
+  arborea: 'bg-emerald-900/50 text-emerald-200 border-emerald-700/70',
+  arbustiva: 'bg-lime-900/50 text-lime-200 border-lime-700/70',
+  herbacea: 'bg-green-800/50 text-green-200 border-green-600/70',
+  liana: 'bg-teal-900/50 text-teal-200 border-teal-700/70',
+  hongo: 'bg-purple-900/50 text-purple-200 border-purple-700/70',
+  acuatica_flotante: 'bg-cyan-900/50 text-cyan-200 border-cyan-700/70',
+  acuatica_sumergida: 'bg-blue-900/50 text-blue-200 border-blue-700/70',
+  parasita: 'bg-rose-900/50 text-rose-200 border-rose-700/70',
+  epifita: 'bg-pink-900/50 text-pink-200 border-pink-700/70',
+  succulenta_gigante: 'bg-emerald-800/50 text-white border-emerald-500/70',
+};
+
+export const PLANT_FOLIAGE_COLORS: Record<FollajePlanta, string> = {
+  hoja_ancha: 'bg-green-700/50 text-green-100 border-green-500/70',
+  aguja: 'bg-stone-700/50 text-stone-200 border-stone-500/70',
+  fronda: 'bg-lime-700/50 text-lime-100 border-lime-500/70',
+  suculenta: 'bg-emerald-600/50 text-emerald-100 border-emerald-400/70',
+  espinas: 'bg-red-900/50 text-red-200 border-red-700/70',
+  sin_hojas: 'bg-slate-700/50 text-slate-300 border-slate-500/70',
+  cristalino: 'bg-cyan-500/20 text-cyan-100 border-cyan-400/70',
+  bioluminiscente: 'bg-indigo-500/20 text-indigo-100 border-indigo-400/70',
+  membrana: 'bg-pink-500/20 text-pink-100 border-pink-400/70',
 };
 
 export const WarningIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;

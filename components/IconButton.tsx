@@ -21,7 +21,7 @@ const IconButton: React.FC<IconButtonProps> = ({ onClick, children, label }) => 
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="p-2 rounded-md bg-space-light hover:bg-space-mid transition-colors duration-200 text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+      className="w-10 h-10 rounded-md bg-space-light hover:bg-space-mid transition-colors duration-200 text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent-cyan flex items-center justify-center"
     >
       {children}
     </button>

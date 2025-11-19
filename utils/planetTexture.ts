@@ -38,19 +38,16 @@ const lerpColor = (color1: Color, color2: Color, t: number): Color => [
 // --- MAIN GENERATION LOGIC ---
 
 /**
- * Generates an ImageData object representing a planet's texture.
- * @param planet The planet's data payload.
- * @param orbitObjectId The ID of the planet object, used as a seed for the noise generator.
- * @param width The desired width of the texture.
- * @param height The desired height of the texture.
- * @returns A fully generated ImageData object for the planet texture.
+ * Generates a raw buffer representing a planet's texture.
+ * Returns a Uint8ClampedArray which is transferable between workers and main thread,
+ * unlike ImageData which is DOM-specific.
  */
-export const generatePlanetImageData = (
+export const generatePlanetTextureBuffer = (
     planet: CargaUtilPlaneta, 
     orbitObjectId: string, 
     width: number, 
     height: number
-): ImageData => {
+): Uint8ClampedArray => {
     // Initialize the noise generator with the planet's unique ID to ensure deterministic generation.
     const noise = new SimplexNoise(orbitObjectId);
 
@@ -67,8 +64,6 @@ export const generatePlanetImageData = (
 
     /**
      * Fractional Brownian Motion (fbm).
-     * This function layers multiple "octaves" of noise at different frequencies and amplitudes
-     * to create more complex and natural-looking patterns than a single noise call.
      */
     const fbm = (x: number, y: number, z: number, octaves: number, persistence: number, lacunarity: number) => {
         let total = 0;
@@ -81,29 +76,24 @@ export const generatePlanetImageData = (
             amplitude *= persistence;
             frequency *= lacunarity;
         }
-        return total / maxValue; // Normalize the result to be between -1 and 1.
+        return total / maxValue;
     };
     
-    const imageData = new ImageData(width, height);
-    const data = imageData.data;
+    // Create raw buffer instead of ImageData
+    const buffer = new Uint8ClampedArray(width * height * 4);
     const avgHumidity = (planet.rangoHumedad[0] + planet.rangoHumedad[1]) / 2;
 
-    // Iterate over every pixel in the texture.
     for (let j = 0; j < height; j++) {
       for (let i = 0; i < width; i++) {
-        // Use equirectangular projection to map the 2D pixel coordinates (i, j)
-        // onto the surface of a 3D sphere.
-        const lon = (i / width) * 2 * Math.PI; // Longitude (0 to 2π)
-        const lat = (j / height) * Math.PI;   // Latitude (0 to π)
+        const lon = (i / width) * 2 * Math.PI;
+        const lat = (j / height) * Math.PI; 
 
-        // Convert spherical coordinates (lon, lat) to 3D Cartesian coordinates (x, y, z).
         const x = Math.sin(lat) * Math.cos(lon);
         const z = Math.sin(lat) * Math.sin(lon);
         const y = Math.cos(lat);
 
         let color: Color;
 
-        // --- Color Calculation based on Planet Type ---
         if (planet.tipoPlaneta === 'GIGANTE_GASEOSO') {
             const bandNoise = fbm(y * 4, z * 2, x * 2, 3, 0.5, 2.0) * 0.5 + 0.5;
             const swirlNoise = fbm(x * 8, y * 8, z * 8, 4, 0.4, 2.2) * 0.1;
@@ -112,18 +102,18 @@ export const generatePlanetImageData = (
             const c1 = lerpColor(palette.band1, palette.band2, Math.sin(yPos * Math.PI * 3 + bandNoise) * 0.5 + 0.5);
             const c2 = lerpColor(palette.band3, palette.band4, Math.cos(yPos * Math.PI * 2 + bandNoise) * 0.5 + 0.5);
             color = lerpColor(c1, c2, Math.sin(yPos * Math.PI * 5) * 0.5 + 0.5);
-        } else { // For terrestrial planets
-            const seaLevel = (avgHumidity * 0.5) - 0.25; // More humidity = higher sea level
-            const iceLine = lerp(0.8, 0.4, planet.composicionGlobal.hielo); // More ice = ice caps at lower elevations
+        } else { 
+            const seaLevel = (avgHumidity * 0.5) - 0.25;
+            const iceLine = lerp(0.8, 0.4, planet.composicionGlobal.hielo);
               
-            const continentVal = fbm(x * 1.5, y * 1.5, z * 1.5, 3, 0.5, 2.0); // Low-frequency noise for continent shapes
-            const elevationVal = fbm(x * 4, y * 4, z * 4, 6, 0.5, 2.0);    // High-frequency noise for mountains/details
+            const continentVal = fbm(x * 1.5, y * 1.5, z * 1.5, 3, 0.5, 2.0);
+            const elevationVal = fbm(x * 4, y * 4, z * 4, 6, 0.5, 2.0);
 
-            if (continentVal < seaLevel) { // Point is underwater
+            if (continentVal < seaLevel) {
               const depth = (seaLevel - continentVal) * 2;
               const t = Math.max(0, 1 - depth);
               color = lerpColor(palette.deepWater, palette.shallowWater, t);
-            } else { // Point is on land
+            } else {
               const elevation = (continentVal - seaLevel + (elevationVal * 0.2)) / (1.0 - seaLevel);
               if (elevation > iceLine) {
                 color = lerpColor(palette.mountain, palette.snow, (elevation - iceLine) / (1.0 - iceLine));
@@ -137,14 +127,13 @@ export const generatePlanetImageData = (
             }
         }
           
-        // Write the final RGBA values to the ImageData buffer.
         const idx = (j * width + i) * 4;
-        data[idx] = color[0];
-        data[idx + 1] = color[1];
-        data[idx + 2] = color[2];
-        data[idx + 3] = 255; // Alpha (fully opaque)
+        buffer[idx] = color[0];
+        buffer[idx + 1] = color[1];
+        buffer[idx + 2] = color[2];
+        buffer[idx + 3] = 255;
       }
     }
     
-    return imageData;
+    return buffer;
 };

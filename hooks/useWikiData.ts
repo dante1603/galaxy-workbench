@@ -1,20 +1,16 @@
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useStaticDataCtx } from '../context/StaticDataContext';
 import { 
-    getAllFauna, 
-    getAllPlants, 
-    getAllMinerals, 
-    getAllMaterials, 
-    getAllBiomes, 
-    getAllCrystals,
     getAllWeapons,
     getAllTools,
     getAllRecipes,
     getAllPlayers,
     getAllEffects,
 } from '../services/dataService';
-import type { Jugador, Fauna, Planta, Mineral, Material, ReinoAnimal, Bioma, ArquetipoCristal, TipoCristal, CategoriaBiome, Dieta, TamanoFauna, OrigenMaterial, EspecieInteligente, Locomocion, Arma, Herramienta, Receta, Efecto } from '../types';
+import type { Jugador, Fauna, Planta, Mineral, Material, ReinoAnimal, Bioma, ArquetipoCristal, TipoCristal, CategoriaBiome, Dieta, TamanoFauna, OrigenMaterial, Locomocion, Arma, Herramienta, Receta, Efecto } from '../types';
 
-export type WikiTab = 'Jugador' | 'Especies' | 'Fauna' | 'Flora' | 'Minerales' | 'Cristales' | 'Materiales' | 'Biomas' | 'Efectos' | 'Armas' | 'Herramientas' | 'Crafteo';
+export type WikiTab = 'Jugador' | 'Especies' | 'Fauna' | 'Flora' | 'Consumibles' | 'Minerales' | 'Cristales' | 'Materiales' | 'Biomas' | 'Efectos' | 'Armas' | 'Herramientas' | 'Crafteo';
 export type WikiEntityType = 'Jugador' | 'Especie' | 'Fauna' | 'Flora' | 'Mineral' | 'Cristal' | 'Material' | 'Biome' | 'Efecto' | 'Arma' | 'Herramienta' | 'Crafteo' | 'Recipe';
 
 const WIKI_STORAGE_PREFIX = 'galaxy-workbench-wiki-';
@@ -41,90 +37,79 @@ const setStoredData = <T,>(key: string, value: T): void => {
 
 /**
  * A custom hook to manage the state and logic for the WikiPanel.
- * It handles fetching all necessary game data, applying user-selected filters,
- * and providing the filtered data to the component. It also manages the state
- * of the filter UI itself.
- *
- * @param isOpen Whether the WikiPanel is currently open. Data fetching is triggered by this.
- * @param allSpecies The list of intelligent species, passed as a prop from App.tsx.
- * @param activeTab The currently selected tab in the WikiPanel, which determines which data to filter and display.
- * @returns An object containing the loading state, filter states and setters, all fetched data, the filtered data for the active tab, and a function to add new fauna.
+ * Consumes StaticDataContext for base data and handles local overrides/filters.
  */
-export const useWikiData = (isOpen: boolean, allSpecies: EspecieInteligente[], activeTab: WikiTab) => {
+export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
+    const { species, fauna, plants, minerals, materials, biomes, crystals } = useStaticDataCtx();
+    
     const [isLoading, setIsLoading] = useState(true);
 
-    // Data states for each category in the wiki
+    // Data states (Local copies that can be edited)
     const [allPlayers, setAllPlayers] = useState<Jugador[]>([]);
     const [allFauna, setAllFauna] = useState<Fauna[]>([]);
-    const [allPlants, setAllPlants] = useState<Planta[]>([]);
-    const [allMinerals, setAllMinerals] = useState<Mineral[]>([]);
-    const [allMaterials, setAllMaterials] = useState<Material[]>([]);
-    const [allBiomes, setAllBiomes] = useState<Bioma[]>([]);
-    const [allCrystals, setAllCrystals] = useState<ArquetipoCristal[]>([]);
+    
     const [allWeapons, setAllWeapons] = useState<Arma[]>([]);
     const [allTools, setAllTools] = useState<Herramienta[]>([]);
     const [allRecipes, setAllRecipes] = useState<Receta[]>([]);
     const [allEffects, setAllEffects] = useState<Efecto[]>([]);
     
-    // Filter states for different tabs
+    // --- FILTERS ---
+    // Fauna
     const [faunaFilter, setFaunaFilter] = useState<ReinoAnimal | 'all'>('all');
     const [dietaFilter, setDietaFilter] = useState<Dieta | 'all'>('all');
     const [tamanoFilter, setTamanoFilter] = useState<TamanoFauna | 'all'>('all');
     const [locomotionFilter, setLocomotionFilter] = useState<Locomocion | 'all'>('all');
+    
+    // Others
     const [crystalFilter, setCrystalFilter] = useState<TipoCristal | 'all'>('all');
     const [biomeFilter, setBiomeFilter] = useState<CategoriaBiome | 'all'>('all');
     const [materialFilter, setMaterialFilter] = useState<OrigenMaterial | 'all'>('all');
+    const [materialRarityFilter, setMaterialRarityFilter] = useState<string | 'all'>('all');
+    
+    // New Filters
+    const [floraStructureFilter, setFloraStructureFilter] = useState<string | 'all'>('all');
+    const [floraFoliageFilter, setFloraFoliageFilter] = useState<string | 'all'>('all');
+    const [mineralRarityFilter, setMineralRarityFilter] = useState<string | 'all'>('all');
+    const [effectTypeFilter, setEffectTypeFilter] = useState<string | 'all'>('all');
+    const [weaponTypeFilter, setWeaponTypeFilter] = useState<string | 'all'>('all');
+    const [toolTypeFilter, setToolTypeFilter] = useState<string | 'all'>('all');
+    const [speciesDietFilter, setSpeciesDietFilter] = useState<string | 'all'>('all');
 
-    // UI state for the filter accordion
+    // Search State
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // UI state
     const [openFilter, setOpenFilter] = useState<string | null>(null);
     
-    // Effect to fetch all data when the panel is opened for the first time
+    // Load and Sync Data
     useEffect(() => {
         if (isOpen && isLoading) {
-            const loadData = async <T,>(key: string, fetcher: () => Promise<T[]>, forceFresh = false): Promise<T[]> => {
-                const storageKey = `${WIKI_STORAGE_PREFIX}${key}`;
-                if (!forceFresh) {
-                    const stored = getStoredData<T[]>(storageKey);
-                    if (stored) return stored;
-                }
-                const fetched = await fetcher();
-                setStoredData(storageKey, fetched);
-                return fetched;
-            };
-
-            Promise.all([
-                loadData('players', getAllPlayers),
-                loadData('fauna', getAllFauna, true), // Always fetch fresh fauna data
-                loadData('plants', getAllPlants),
-                loadData('minerals', getAllMinerals),
-                loadData('materials', getAllMaterials),
-                loadData('biomes', getAllBiomes),
-                loadData('crystals', getAllCrystals),
-                loadData('weapons', getAllWeapons),
-                loadData('tools', getAllTools),
-                loadData('recipes', getAllRecipes),
-                loadData('effects', getAllEffects),
-            ]).then(([players, fauna, plants, minerals, materials, biomes, crystals, weapons, tools, recipes, effects]) => {
+            const loadData = async () => {
+                const [players, weapons, tools, recipes, effects] = await Promise.all([
+                    getAllPlayers(), getAllWeapons(), getAllTools(), getAllRecipes(), getAllEffects()
+                ]);
                 setAllPlayers(players);
-                setAllFauna(fauna);
-                setAllPlants(plants);
-                setAllMinerals(minerals);
-                setAllMaterials(materials);
-                setAllBiomes(biomes);
-                setAllCrystals(crystals);
                 setAllWeapons(weapons);
                 setAllTools(tools);
                 setAllRecipes(recipes);
                 setAllEffects(effects);
+
+                const storedFauna = getStoredData<Fauna[]>(`${WIKI_STORAGE_PREFIX}fauna`);
+                if (storedFauna) {
+                    setAllFauna(storedFauna);
+                } else {
+                    setAllFauna(fauna);
+                }
+
                 setIsLoading(false);
-            });
+            };
+            loadData();
         }
-    }, [isOpen, isLoading]);
+    }, [isOpen, isLoading, fauna]);
     
-    // --- CRUD Operations for Fauna ---
-    const addFauna = useCallback((fauna: Fauna) => {
+    const addFauna = useCallback((newFauna: Fauna) => {
       setAllFauna(prev => {
-        const updatedFauna = [fauna, ...prev];
+        const updatedFauna = [newFauna, ...prev];
         setStoredData(`${WIKI_STORAGE_PREFIX}fauna`, updatedFauna);
         return updatedFauna;
       });
@@ -146,55 +131,108 @@ export const useWikiData = (isOpen: boolean, allSpecies: EspecieInteligente[], a
         });
     }, []);
 
+    // General filter function for search term
+    const matchesSearch = (item: any) => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+        return (
+            (item.nombre && item.nombre.toLowerCase().includes(term)) ||
+            (item.descripcion && item.descripcion.toLowerCase().includes(term)) ||
+            (item.tipo && item.tipo.toLowerCase().includes(term))
+        );
+    };
 
-    // Memoized filtering logic to prevent re-computation on every render
     const filteredData = useMemo(() => {
+        let data: any[] = [];
         switch (activeTab) {
-            case 'Jugador': return allPlayers;
-            case 'Especies': return allSpecies;
+            case 'Jugador': data = allPlayers; break;
+            case 'Especies': 
+                data = speciesDietFilter === 'all' ? species : species.filter(s => s.metabolismo.dieta === speciesDietFilter);
+                break;
             case 'Fauna':
-                return allFauna.filter(fauna => {
-                    const kingdomMatch = faunaFilter === 'all' || fauna.reino === faunaFilter;
-                    const dietaMatch = dietaFilter === 'all' || fauna.dieta === dietaFilter;
-                    const tamanoMatch = tamanoFilter === 'all' || fauna.tamano === tamanoFilter;
-                    const locomotionMatch = locomotionFilter === 'all' || fauna.locomocion === locomotionFilter;
+                data = allFauna.filter(f => {
+                    const kingdomMatch = faunaFilter === 'all' || f.reino === faunaFilter;
+                    const dietaMatch = dietaFilter === 'all' || f.dieta === dietaFilter;
+                    const tamanoMatch = tamanoFilter === 'all' || f.tamano === tamanoFilter;
+                    const locomotionMatch = locomotionFilter === 'all' || f.locomocion === locomotionFilter;
                     return kingdomMatch && locomotionMatch && dietaMatch && tamanoMatch;
                 });
+                break;
             case 'Cristales':
-                return crystalFilter === 'all'
-                    ? allCrystals
-                    : allCrystals.filter(crystal => crystal.tipoCristal === crystalFilter);
+                data = crystalFilter === 'all' ? crystals : crystals.filter(c => c.tipoCristal === crystalFilter);
+                break;
             case 'Biomas':
-                return biomeFilter === 'all'
-                    ? allBiomes
-                    : allBiomes.filter(biome => biome.categoria === biomeFilter);
+                data = biomeFilter === 'all' ? biomes : biomes.filter(b => b.categoria === biomeFilter);
+                break;
             case 'Materiales':
-                return materialFilter === 'all'
-                    ? allMaterials
-                    : allMaterials.filter(mat => mat.origen === materialFilter);
-            case 'Flora': return allPlants;
-            case 'Minerales': return allMinerals;
-            case 'Efectos': return allEffects;
-            case 'Armas': return allWeapons;
-            case 'Herramientas': return allTools;
-            case 'Crafteo': return allRecipes;
-            default: return [];
+                data = materials.filter(m => {
+                    const originMatch = materialFilter === 'all' || m.origen === materialFilter;
+                    const rarityMatch = materialRarityFilter === 'all' || m.rareza === materialRarityFilter;
+                    return originMatch && rarityMatch;
+                });
+                break;
+            case 'Consumibles':
+                data = materials.filter(m => {
+                    const isConsumable = m.tags.includes('consumible');
+                    const rarityMatch = materialRarityFilter === 'all' || m.rareza === materialRarityFilter;
+                    return isConsumable && rarityMatch;
+                });
+                break;
+            case 'Flora': 
+                data = plants.filter(p => {
+                     const struct = floraStructureFilter === 'all' || p.estructura === floraStructureFilter;
+                     const fol = floraFoliageFilter === 'all' || p.follaje === floraFoliageFilter;
+                     return struct && fol;
+                });
+                break;
+            case 'Minerales': 
+                data = mineralRarityFilter === 'all' ? minerals : minerals.filter(m => m.rareza === mineralRarityFilter);
+                break;
+            case 'Efectos': 
+                data = effectTypeFilter === 'all' ? allEffects : allEffects.filter(e => e.tipoEfecto === effectTypeFilter);
+                break;
+            case 'Armas': 
+                data = weaponTypeFilter === 'all' ? allWeapons : allWeapons.filter(w => w.tipoArma === weaponTypeFilter);
+                break;
+            case 'Herramientas': 
+                data = toolTypeFilter === 'all' ? allTools : allTools.filter(t => t.tipoHerramienta === toolTypeFilter);
+                break;
+            case 'Crafteo': data = allRecipes; break; 
         }
+        
+        // Apply search filter
+        return data.filter(matchesSearch);
+
     }, [
-        activeTab, allPlayers, allFauna, allCrystals, allBiomes, allMaterials, allSpecies, allPlants, allMinerals, allWeapons, allTools, allRecipes, allEffects,
-        faunaFilter, dietaFilter, tamanoFilter, locomotionFilter, crystalFilter, biomeFilter, materialFilter
+        activeTab, allPlayers, allFauna, crystals, biomes, materials, species, plants, minerals, allWeapons, allTools, allRecipes, allEffects,
+        faunaFilter, dietaFilter, tamanoFilter, locomotionFilter, crystalFilter, biomeFilter, materialFilter, searchTerm,
+        floraStructureFilter, floraFoliageFilter, mineralRarityFilter, effectTypeFilter, weaponTypeFilter, toolTypeFilter, speciesDietFilter, materialRarityFilter
     ]);
 
-    // Group filters and setters for cleaner return
     const filters = {
-        faunaFilter, dietaFilter, tamanoFilter, locomotionFilter, crystalFilter, biomeFilter, materialFilter
+        faunaFilter, dietaFilter, tamanoFilter, locomotionFilter, crystalFilter, biomeFilter, materialFilter,
+        floraStructureFilter, floraFoliageFilter, mineralRarityFilter, effectTypeFilter, weaponTypeFilter, toolTypeFilter, speciesDietFilter, materialRarityFilter
     };
     
     const setters = {
-        setFaunaFilter, setDietaFilter, setTamanoFilter, setLocomotionFilter, setCrystalFilter, setBiomeFilter, setMaterialFilter
+        setFaunaFilter, setDietaFilter, setTamanoFilter, setLocomotionFilter, setCrystalFilter, setBiomeFilter, setMaterialFilter, setSearchTerm,
+        setFloraStructureFilter, setFloraFoliageFilter, setMineralRarityFilter, setEffectTypeFilter, setWeaponTypeFilter, setToolTypeFilter, setSpeciesDietFilter, setMaterialRarityFilter
     };
 
-    const allData = { allPlayers, allFauna, allPlants, allMinerals, allMaterials, allBiomes, allCrystals, allSpecies, allWeapons, allTools, allRecipes, allEffects };
+    const allData = { 
+        allPlayers, 
+        allFauna, 
+        allPlants: plants, 
+        allMinerals: minerals, 
+        allMaterials: materials, 
+        allBiomes: biomes, 
+        allCrystals: crystals, 
+        allSpecies: species, 
+        allWeapons, 
+        allTools, 
+        allRecipes, 
+        allEffects 
+    };
 
     return {
         isLoading,
@@ -207,5 +245,6 @@ export const useWikiData = (isOpen: boolean, allSpecies: EspecieInteligente[], a
         addFauna,
         updateFauna,
         deleteFauna,
+        searchTerm
     };
 };
