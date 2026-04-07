@@ -106,7 +106,14 @@ const FaunaCard: React.FC<FaunaCardProps> = ({ fauna, viewMode = 'list', onEdit,
                 <button onClick={() => onEdit(fauna)} title="Editar" className="p-1.5 rounded-md bg-space-light/50 hover:bg-accent-amber/80 text-slate-300 hover:text-space-dark transition-colors">
                     <EditIcon />
                 </button>
-                 <button onClick={() => onDelete('Fauna', fauna.id)} title="Eliminar" className="p-1.5 rounded-md bg-space-light/50 hover:bg-red-600/80 text-slate-300 hover:text-white transition-colors">
+                 <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete('Fauna', fauna.id);
+                    }} 
+                    title="Eliminar" 
+                    className="p-1.5 rounded-md bg-space-light/50 hover:bg-red-600/80 text-slate-300 hover:text-white transition-colors"
+                >
                     <TrashIcon />
                 </button>
             </div>

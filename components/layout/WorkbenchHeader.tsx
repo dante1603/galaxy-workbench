@@ -2,6 +2,8 @@
 import React, { useCallback } from 'react';
 import IconButton from '../IconButton';
 import { useWorkbenchStore, Tool } from '../../state/workbenchStore';
+import { useAuth } from '../../hooks/useAuth';
+import { loginWithGoogle, logout } from '../../firebase';
 
 // --- Local Icons ---
 const CopyIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
@@ -14,6 +16,8 @@ const GridIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-
 const ManifestoIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>;
 const CubeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
 const BackArrowIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+const LogInIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>;
+const LogOutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 
 interface WorkbenchHeaderProps {
     onOpenWiki: () => void;
@@ -38,6 +42,8 @@ const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
         returnToGalaxy, 
         resetSystems 
     } = useWorkbenchStore();
+    
+    const { user } = useAuth();
 
     // --- ACTION HANDLERS ---
 
@@ -232,6 +238,18 @@ const WorkbenchHeader: React.FC<WorkbenchHeaderProps> = ({
                   <IconButton onClick={handleReset} label="Reset All Systems">
                     <ResetIcon />
                   </IconButton>
+                  
+                  <div className="h-6 w-px bg-white/10 flex-shrink-0"></div>
+                  
+                  {user ? (
+                    <IconButton onClick={logout} label={`Logout (${user.email})`}>
+                      <LogOutIcon />
+                    </IconButton>
+                  ) : (
+                    <IconButton onClick={loginWithGoogle} label="Login with Google">
+                      <LogInIcon />
+                    </IconButton>
+                  )}
                 </div>
               </div>
             </div>

@@ -2,10 +2,16 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SimplexNoise } from '../utils/simplexNoise';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { GoogleGenAI } from "@google/genai";
 import { useWorkbenchStore } from '../state/workbenchStore';
-import type { TipoPlaneta } from '../types';
+import type { TipoPlaneta, CargaUtilPlaneta, TipoEstrella } from '../types';
+import { generatePlanetGeometryData, resolvePlanetVisuals } from '../utils/planetGeometry';
+import { generateStarTextureBuffer } from '../utils/planetTexture';
+import { TABLA_ESTRELLAS } from '../constants/starTables';
+import { BH_VERTEX_SHADER, BH_FRAGMENT_SHADER } from '../utils/blackHoleUtils';
 
 // --- ICONS ---
 const DiceIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 8h.01"></path><path d="M8 8h.01"></path><path d="M8 16h.01"></path><path d="M16 16h.01"></path><path d="M12 12h.01"></path></svg>;
@@ -15,136 +21,30 @@ const EyeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" heig
 const EyeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
 const LinkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>;
 const UnlinkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>;
+const StarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+const PlanetIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+const VortexIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2.05 12a9.95 9.95 0 0 1 2.37-6.02L12 12 2.05 12zm17.58-6.02A9.95 9.95 0 0 1 21.95 12H12l7.63-6.02zM4.42 18.02a9.95 9.95 0 0 1 1.08-12.63L12 12 4.42 18.02zm15.16-12.63a9.95 9.95 0 0 1 1.08 12.63L12 12l7.58-6.61zM2 12c0 5.52 4.48 10 10 10s10-4.48 10-10"></path></svg>;
 
-// --- TYPES & PRESETS ---
-
-interface PlanetPreset {
-  name: string;
-  seaLevel: number;
-  roughness: number;
-  frequency: number;
-  colors: {
-    deepOcean: THREE.Color;
-    midOcean: THREE.Color;
-    shallowOcean: THREE.Color;
-    beach: THREE.Color;
-    plains: THREE.Color;
-    forest: THREE.Color;
-    mountain: THREE.Color;
-    peak: THREE.Color;
-  };
-}
-
-const PRESETS: Record<string, PlanetPreset> = {
-  TERRAN: {
-    name: 'Terran (Jungla/Bosque)',
-    seaLevel: 0.5,
-    roughness: 1.5,
-    frequency: 1.0,
-    colors: {
-      deepOcean: new THREE.Color(0x00002E),
-      midOcean: new THREE.Color(0x00427E),
-      shallowOcean: new THREE.Color(0x008EAE),
-      beach: new THREE.Color(0xD9E2B4),
-      plains: new THREE.Color(0x558E3A),
-      forest: new THREE.Color(0x226021),
-      mountain: new THREE.Color(0x736961),
-      peak: new THREE.Color(0xFFFFFF),
-    }
-  },
-  DESERT: {
-    name: 'Desértico',
-    seaLevel: 0.1,
-    roughness: 1.2,
-    frequency: 0.8,
-    colors: {
-      deepOcean: new THREE.Color(0x5D2906), // Lava seca o salmuera profunda
-      midOcean: new THREE.Color(0xA0522D),
-      shallowOcean: new THREE.Color(0xCD853F),
-      beach: new THREE.Color(0xF4A460),
-      plains: new THREE.Color(0xDEB887),
-      forest: new THREE.Color(0xD2691E),
-      mountain: new THREE.Color(0x8B4513),
-      peak: new THREE.Color(0x800000),
-    }
-  },
-  VOLCANIC: {
-    name: 'Volcánico',
-    seaLevel: 0.3,
-    roughness: 2.5,
-    frequency: 1.5,
-    colors: {
-      deepOcean: new THREE.Color(0x330000), // Magma profundo
-      midOcean: new THREE.Color(0x800000),
-      shallowOcean: new THREE.Color(0xFF4500), // Lava brillante
-      beach: new THREE.Color(0x2F4F4F), // Ceniza
-      plains: new THREE.Color(0x1a1a1a), // Roca basáltica
-      forest: new THREE.Color(0x333333),
-      mountain: new THREE.Color(0x000000),
-      peak: new THREE.Color(0x555555),
-    }
-  },
-  AQUATIC: {
-    name: 'Acuático',
-    seaLevel: 0.85,
-    roughness: 0.8,
-    frequency: 1.2,
-    colors: {
-      deepOcean: new THREE.Color(0x001a33),
-      midOcean: new THREE.Color(0x003366),
-      shallowOcean: new THREE.Color(0x006699),
-      beach: new THREE.Color(0x0099cc), // Arrecifes someros
-      plains: new THREE.Color(0x33ccff),
-      forest: new THREE.Color(0x20b2aa), // Islas de coral/algas
-      mountain: new THREE.Color(0x008080),
-      peak: new THREE.Color(0xa0db8e),
-    }
-  },
-  ICE: {
-    name: 'Tundra / Helado',
-    seaLevel: 0.45,
-    roughness: 1.8,
-    frequency: 1.1,
-    colors: {
-      deepOcean: new THREE.Color(0x2b3a42),
-      midOcean: new THREE.Color(0x3f5a6c),
-      shallowOcean: new THREE.Color(0x5d8aa8),
-      beach: new THREE.Color(0xb0c4de),
-      plains: new THREE.Color(0xf0f8ff),
-      forest: new THREE.Color(0xdcdcdc),
-      mountain: new THREE.Color(0xa9a9a9),
-      peak: new THREE.Color(0xffffff),
-    }
-  },
-   GAS_GIANT: { // Simulated
-    name: 'Gigante Gaseoso',
-    seaLevel: 0.0, // No ocean visual displacement logic usually
-    roughness: 0.2,
-    frequency: 2.5,
-    colors: {
-      deepOcean: new THREE.Color(0x4B0082),
-      midOcean: new THREE.Color(0x800080),
-      shallowOcean: new THREE.Color(0x8A2BE2),
-      beach: new THREE.Color(0x9370DB),
-      plains: new THREE.Color(0xBA55D3),
-      forest: new THREE.Color(0xDDA0DD),
-      mountain: new THREE.Color(0xEE82EE),
-      peak: new THREE.Color(0xFF00FF),
-    }
-  }
+// Helper to create a dummy payload for standalone generation
+const createDummyPayload = (type: TipoPlaneta): CargaUtilPlaneta => {
+    return {
+        tipoPlaneta: type,
+        tituloTipoPlaneta: "Simulacro",
+        biomas: [],
+        subOrbitas: [],
+        cristales: [],
+        atmosfera: { composicion: "" },
+        composicionGlobal: { roca: 0.5, metal: 0.3, hielo: 0.2 },
+        gravedad: 'medium',
+        presion: 'medium',
+        tipoAtmosfera: 'breathable',
+        rangoTemperaturaC: [20, 20],
+        rangoHumedad: [0.5, 0.5],
+        distribucionBiomas: [],
+        peligrosPlanetarios: [],
+        densidadVida: 'medium'
+    };
 };
-
-// Helper to map Global types to Local presets
-const mapPlanetTypeToPreset = (type: TipoPlaneta): string => {
-    switch (type) {
-        case 'JUNGLA': return 'TERRAN';
-        case 'DESERTICO': return 'DESERT';
-        case 'VOLCANICO': return 'VOLCANIC';
-        case 'ACUATICO': return 'AQUATIC';
-        case 'GIGANTE_GASEOSO': return 'GAS_GIANT';
-        default: return 'TERRAN';
-    }
-}
 
 interface PlanetGenerator3DProps {
     isPaused?: boolean;
@@ -157,20 +57,40 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const planetMeshRef = useRef<THREE.Mesh | null>(null);
+  const meshRef = useRef<THREE.Mesh | null>(null);
+  const glowRef = useRef<THREE.Sprite | null>(null);
+  const composerRef = useRef<EffectComposer | null>(null);
+  
+  const bhUniformsRef = useRef({
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(0xff4500) },
+      uDiskRadius: { value: 4.0 },
+      uBlackHoleRadius: { value: 0.5 },
+      uCameraPos: { value: new THREE.Vector3() },
+      uOpacity: { value: 1.0 },
+  });
+
   const controlsRef = useRef<OrbitControls | null>(null);
   const animationRef = useRef<number | null>(null);
   
   // --- STATE ---
   const [isSceneReady, setIsSceneReady] = useState(false);
+  const [objectType, setObjectType] = useState<'PLANET' | 'STAR' | 'BLACK_HOLE'>('PLANET');
   
-  // Params
-  const [activePreset, setActivePreset] = useState<string>('TERRAN');
+  // Configuration
+  const [planetType, setPlanetType] = useState<TipoPlaneta>('JUNGLA');
+  const [starType, setStarType] = useState<TipoEstrella>('solar');
   const [seed, setSeed] = useState<string>('galaxy-workbench');
-  const [seaLevel, setSeaLevel] = useState<number>(0.5);
-  const [roughness, setRoughness] = useState<number>(1.5);
-  const [frequency, setFrequency] = useState<number>(1.0);
   
+  // Visual Overrides
+  const [seaLevel, setSeaLevel] = useState<number>(0.5);
+  const [roughness, setRoughness] = useState<number>(0.5); 
+  const [hueShift, setHueShift] = useState<number>(0);
+  const [granulation, setGranulation] = useState<number>(2.5);
+  const [starColorOverride, setStarColorOverride] = useState<string>('');
+  const [bhDiskColor, setBhDiskColor] = useState<string>('#ff4500'); 
+  const [bhDiskScale, setBhDiskScale] = useState<number>(4.0);
+
   // UI State
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiDescription, setAiDescription] = useState<string | null>(null);
@@ -179,12 +99,12 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const [linkedPlanetName, setLinkedPlanetName] = useState<string | null>(null);
 
-  // Pause Ref
   const isPausedRef = useRef(isPaused);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
 
+  const isGasGiant = planetType === 'GIGANTE_GASEOSO';
+
   // --- DATA BINDING EFFECT ---
-  // This effect connects the global selection to the Voxel Lab's local state
   useEffect(() => {
     if (selectedPlanetId) {
         const planet = systems
@@ -192,61 +112,61 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
             .find(obj => obj.id === selectedPlanetId && obj.tipo === 'PLANETA');
         
         if (planet && planet.tipo === 'PLANETA') {
+            setObjectType('PLANET');
             const payload = planet.cargaUtil;
             setLinkedPlanetName(payload.tituloTipoPlaneta);
-            setSeed(planet.id); // Deterministic seed from ID
+            setSeed(planet.id);
+            setPlanetType(payload.tipoPlaneta);
             
-            // Map Global Data to Visual Sliders
-            setActivePreset(mapPlanetTypeToPreset(payload.tipoPlaneta));
-            
-            // Approximate visual params based on data
-            // Sea Level based on ice/water composition + humidity
-            let calcSeaLevel = 0.5;
-            if (payload.tipoPlaneta === 'ACUATICO') calcSeaLevel = 0.8 + (Math.random() * 0.15);
-            else if (payload.tipoPlaneta === 'DESERTICO') calcSeaLevel = 0.1;
-            else if (payload.tipoPlaneta === 'GIGANTE_GASEOSO') calcSeaLevel = 0.0;
-            else {
-                const humidAvg = (payload.rangoHumedad[0] + payload.rangoHumedad[1]) / 2;
-                calcSeaLevel = humidAvg * 0.7; 
-            }
-            setSeaLevel(calcSeaLevel);
-
-            // Roughness based on Gravity/Type
-            let calcRoughness = 1.5;
-            if (payload.gravedad === 'high') calcRoughness = 0.8; // High gravity = flatter
-            else if (payload.gravedad === 'low') calcRoughness = 2.2; // Low gravity = spikey
-            if (payload.tipoPlaneta === 'VOLCANICO') calcRoughness += 0.5;
-            if (payload.tipoPlaneta === 'GIGANTE_GASEOSO') calcRoughness = 0.2;
-            setRoughness(calcRoughness);
-            
-            setFrequency(1.0 + Math.random() * 0.5); // Slight variation
+            const visuals = resolvePlanetVisuals(payload);
+            setSeaLevel(visuals.seaLevel);
+            setRoughness(visuals.roughness);
+            setHueShift(0);
         }
     } else {
         setLinkedPlanetName(null);
+        if (!linkedPlanetName && seed === 'galaxy-workbench') {
+            setSeaLevel(0.5);
+            setRoughness(0.5);
+            setHueShift(0);
+        }
     }
-  }, [selectedPlanetId, systems]);
+  }, [selectedPlanetId, systems, linkedPlanetName, seed]);
 
-  // --- 1. INIT SCENE (Runs once) ---
+  // --- 1. INIT SCENE ---
   useEffect(() => {
     if (!mountRef.current) return;
+    const currentMount = mountRef.current;
 
-    // Setup
     const scene = new THREE.Scene();
-    // Remove background color so the global "space" background shows through
     sceneRef.current = scene;
 
-    const width = mountRef.current.clientWidth;
-    const height = mountRef.current.clientHeight;
+    const width = mountRef.current.clientWidth || 1;
+    const height = mountRef.current.clientHeight || 1;
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-    camera.position.z = 3.5;
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 10000); 
+    camera.position.set(0, 2, 5);
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; 
     rendererRef.current = renderer;
     mountRef.current.appendChild(renderer.domElement);
+
+    // --- POST PROCESSING SETUP ---
+    const renderPass = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0.2;
+    bloomPass.strength = 1.2; 
+    bloomPass.radius = 0.5;
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(renderPass);
+    composer.addPass(bloomPass);
+    
+    composerRef.current = composer;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -266,25 +186,43 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
     backLight.position.set(-5, -2, -5);
     scene.add(backLight);
 
+    const clock = new THREE.Clock();
+
     // Animation Loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
-      
       if (isPausedRef.current) return;
-
+      
+      const elapsed = clock.getElapsedTime();
       controls.update();
-      renderer.render(scene, camera);
+      
+      if (meshRef.current) {
+          if (meshRef.current.userData.isStar) {
+               meshRef.current.rotation.y += 0.002;
+          }
+      }
+      
+      if (meshRef.current && meshRef.current.userData.isBlackHole) {
+          if (meshRef.current.material instanceof THREE.ShaderMaterial) {
+             meshRef.current.material.uniforms.uTime.value = elapsed;
+             // Update camera position uniform for raymarching inside the box
+             meshRef.current.material.uniforms.uCameraPos.value.copy(camera.position);
+          }
+      }
+
+      // Use Composer instead of standard renderer
+      composer.render();
     };
     animate();
 
     setIsSceneReady(true);
 
-    // Cleanup
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      if (rendererRef.current && mountRef.current) {
-          mountRef.current.removeChild(rendererRef.current.domElement);
+      if (rendererRef.current && currentMount) {
+          currentMount.removeChild(rendererRef.current.domElement);
           rendererRef.current.dispose();
+          composer.dispose();
       }
       setIsSceneReady(false);
     };
@@ -293,171 +231,233 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
   // --- 2. HANDLE RESIZE ---
   useEffect(() => {
     const handleResize = () => {
-        if (!mountRef.current || !rendererRef.current || !cameraRef.current) return;
+        if (!mountRef.current || !rendererRef.current || !cameraRef.current || !composerRef.current) return;
         const w = mountRef.current.clientWidth;
         const h = mountRef.current.clientHeight;
         if (w === 0 || h === 0) return; 
         cameraRef.current.aspect = w / h;
         cameraRef.current.updateProjectionMatrix();
         rendererRef.current.setSize(w, h);
+        composerRef.current.setSize(w, h);
     };
-
-    handleResize();
 
     const resizeObserver = new ResizeObserver(handleResize);
     if (mountRef.current) {
         resizeObserver.observe(mountRef.current);
     }
-    
     return () => resizeObserver.disconnect();
   }, [isSceneReady, isControlsVisible]);
 
-
-  // --- 3. PLANET GENERATION (Runs when params change) ---
-  const generatePlanet = useCallback(() => {
+  // --- 3. OBJECT GENERATION ---
+  const generateBody = useCallback(() => {
     if (!sceneRef.current || !isSceneReady) return;
     
     setIsGenerating(true);
 
-    // Clean up old mesh
-    if (planetMeshRef.current) {
-        sceneRef.current.remove(planetMeshRef.current);
-        planetMeshRef.current.geometry.dispose();
-        (planetMeshRef.current.material as THREE.Material).dispose();
-        planetMeshRef.current = null;
+    if (meshRef.current) {
+        sceneRef.current.remove(meshRef.current);
+        meshRef.current.geometry.dispose();
+        if (meshRef.current.material instanceof THREE.Material) meshRef.current.material.dispose();
+        if (glowRef.current) {
+            meshRef.current.remove(glowRef.current);
+            glowRef.current = null;
+        }
+        meshRef.current = null;
     }
-
-    // New Geometry
-    const noise = new SimplexNoise(seed);
-    const geometry = new THREE.SphereGeometry(1.0, 128, 128);
     
-    const count = geometry.attributes.position.count;
-    const positions = geometry.attributes.position;
-    const colors = [];
-    const preset = PRESETS[activePreset];
+    setBiomeStats({});
 
-    const biomeCounts: Record<string, number> = {
-        'Océano Profundo': 0, 'Océano Medio': 0, 'Aguas Someras': 0, 'Playa': 0,
-        'Llanuras': 0, 'Bosque': 0, 'Montaña': 0, 'Nieve/Pico': 0
-    };
+    if (objectType === 'PLANET') {
+        // ... Planet Logic ...
+        const basePayload = createDummyPayload(planetType);
+        const { positions, colors, stats } = generatePlanetGeometryData(
+            basePayload, 
+            seed, 
+            96, 
+            { seaLevel, roughness, hueShift }
+        );
 
-    const _v = new THREE.Vector3();
-    
-    for (let i = 0; i < count; i++) {
-        _v.fromBufferAttribute(positions, i);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            roughness: planetType === 'ACUATICO' ? 0.3 : 0.8,
+            metalness: 0.1,
+            flatShading: true 
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData = { isStar: false };
+        sceneRef.current.add(mesh);
+        meshRef.current = mesh;
+
+        const formattedStats: Record<string, string> = {};
+        const total = positions.length / 3;
+        Object.keys(stats).forEach(key => {
+            const pct = (stats[key] / total) * 100;
+            if (pct > 1) formattedStats[key] = pct.toFixed(1) + '%';
+        });
+        setBiomeStats(formattedStats);
+
+    } else if (objectType === 'STAR') {
+        // ... Star Logic ...
+        const starData = TABLA_ESTRELLAS[starType];
+        const colorHex = starColorOverride || starData.colorHex;
         
-        let noiseVal = 0;
-        let amp = 1.0;
-        let freq = frequency;
-        let maxAmp = 0;
-
-        for(let o=0; o<4; o++) {
-             noiseVal += noise.noise3D(_v.x * freq, _v.y * freq, _v.z * freq) * amp;
-             maxAmp += amp;
-             amp *= 0.5;
-             freq *= 2.0;
-        }
-        noiseVal = (noiseVal / maxAmp + 1) * 0.5; // 0..1
-
-        // Displacement
-        let displacement = 0;
-        if (activePreset === 'GAS_GIANT') {
-             displacement = 0;
-        } else {
-             displacement = (noiseVal - seaLevel) * roughness * 0.2; 
-             if (noiseVal < seaLevel) {
-                displacement = 0; 
-             }
-        }
-
-        const newPos = _v.clone().normalize().multiplyScalar(1.0 + displacement);
-        positions.setXYZ(i, newPos.x, newPos.y, newPos.z);
-
-        // Colors
-        let color = new THREE.Color();
+        const w = 256, h = 128;
+        const buffer = generateStarTextureBuffer(colorHex, seed, w, h, granulation);
         
-        if (activePreset === 'GAS_GIANT') {
-             const latitude = Math.asin(newPos.y / (1.0 + displacement)); 
-             const band = Math.abs(Math.sin(latitude * 10 + noiseVal * 5));
-             
-             if (band < 0.2) color = preset.colors.deepOcean;
-             else if (band < 0.4) color = preset.colors.midOcean;
-             else if (band < 0.6) color = preset.colors.plains;
-             else color = preset.colors.beach;
-             
-        } else {
-             if (noiseVal < seaLevel * 0.4) { color = preset.colors.deepOcean; biomeCounts['Océano Profundo']++; }
-             else if (noiseVal < seaLevel * 0.8) { color = preset.colors.midOcean; biomeCounts['Océano Medio']++; }
-             else if (noiseVal < seaLevel) { color = preset.colors.shallowOcean; biomeCounts['Aguas Someras']++; }
-             else if (noiseVal < seaLevel + 0.03) { color = preset.colors.beach; biomeCounts['Playa']++; }
-             else if (noiseVal < seaLevel + 0.25) { color = preset.colors.plains; biomeCounts['Llanuras']++; }
-             else if (noiseVal < seaLevel + 0.5) { color = preset.colors.forest; biomeCounts['Bosque']++; }
-             else if (noiseVal < seaLevel + 0.8) { color = preset.colors.mountain; biomeCounts['Montaña']++; }
-             else { color = preset.colors.peak; biomeCounts['Nieve/Pico']++; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const imgData = new ImageData(new Uint8ClampedArray(buffer), w, h);
+            ctx.putImageData(imgData, 0, 0);
         }
-        colors.push(color.r, color.g, color.b);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const radius = starData.radioSolar > 5 ? 1.5 : (starData.radioSolar < 0.1 ? 0.5 : 1.0);
+        const geometry = new THREE.SphereGeometry(radius, 64, 64);
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData = { isStar: true };
+        sceneRef.current.add(mesh);
+        meshRef.current = mesh;
+        
+        const spriteCanvas = document.createElement('canvas');
+        spriteCanvas.width = 64; spriteCanvas.height = 64;
+        const sCtx = spriteCanvas.getContext('2d');
+        if (sCtx) {
+            const gradient = sCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.3, `${colorHex}99`); 
+            gradient.addColorStop(0.6, `${colorHex}33`);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            sCtx.fillStyle = gradient;
+            sCtx.fillRect(0, 0, 64, 64);
+        }
+        const spriteMap = new THREE.CanvasTexture(spriteCanvas);
+        const spriteMat = new THREE.SpriteMaterial({ 
+            map: spriteMap, 
+            color: colorHex, 
+            blending: THREE.AdditiveBlending, 
+            transparent: true, 
+            opacity: 0.6 
+        });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(radius * 3, radius * 3, 1);
+        mesh.add(sprite);
+        glowRef.current = sprite;
+        
+        setBiomeStats({ 
+            "Surface Temp": `${starData.temperaturaSuperficialK} K`,
+            "Class": starData.claseEstelar
+        });
+    } else {
+        // --- BLACK HOLE GENERATION ---
+        bhUniformsRef.current.uColor.value.set(bhDiskColor);
+        bhUniformsRef.current.uDiskRadius.value = bhDiskScale;
+        if(cameraRef.current) bhUniformsRef.current.uCameraPos.value.copy(cameraRef.current.position);
+
+        // IMPORTANT: Increase box size to contain the raymarching volume
+        // Max scale is 8.0. Sim radius is 8.0 * 2.5 = 20. Diameter is 40. 
+        // Box size 50 ensures we don't clip.
+        const geometry = new THREE.BoxGeometry(50, 50, 50); 
+        
+        const material = new THREE.ShaderMaterial({
+            uniforms: bhUniformsRef.current,
+            vertexShader: BH_VERTEX_SHADER,
+            fragmentShader: BH_FRAGMENT_SHADER,
+            transparent: true,
+            // Use BackSide because camera is usually inside this large box in Voxel Lab
+            side: THREE.BackSide, 
+            blending: THREE.NormalBlending
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData = { isBlackHole: true };
+        sceneRef.current.add(mesh);
+        meshRef.current = mesh;
+
+        setBiomeStats({ 
+            "Singularity Mass": `~${(Math.random() * 30 + 5).toFixed(1)} M☉`,
+            "Schwarzschild Radius": `0.5 AU`,
+            "Lensing Effect": "Active",
+            "Doppler Shift": "Relativistic"
+        });
     }
-
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geometry.computeVertexNormals();
-
-    const material = new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: activePreset === 'AQUATIC' ? 0.3 : 0.8,
-        metalness: 0.1,
-        flatShading: activePreset !== 'GAS_GIANT'
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    sceneRef.current.add(mesh);
-    planetMeshRef.current = mesh;
-
-    // Stats
-    const stats: Record<string, string> = {};
-    Object.keys(biomeCounts).forEach(key => {
-        const pct = (biomeCounts[key] / count) * 100;
-        if (pct > 1) stats[key] = pct.toFixed(1) + '%';
-    });
-    setBiomeStats(stats);
 
     setIsGenerating(false);
-  }, [isSceneReady, seed, activePreset, seaLevel, roughness, frequency]);
+  }, [isSceneReady, seed, objectType, planetType, seaLevel, roughness, hueShift, starType, granulation, starColorOverride, bhDiskColor, bhDiskScale]);
 
-  // Trigger generation
   useEffect(() => {
       if (isSceneReady) {
-          generatePlanet();
+          const timer = setTimeout(() => {
+             generateBody();
+          }, 50);
+          return () => clearTimeout(timer);
       }
-  }, [isSceneReady, generatePlanet]);
+  }, [isSceneReady, generateBody]);
 
 
-  // --- 4. AI HANDLER ---
+  // --- AI HANDLER ---
   const handleAiDescribe = async () => {
     setIsAiLoading(true);
     setAiDescription(null);
     try {
         const apiKey = process.env.API_KEY;
         if (!apiKey) {
-            setAiDescription("API Key no encontrada.");
+            setAiDescription("Error: API Key no configurada.");
             setIsAiLoading(false);
             return;
         }
 
         const ai = new GoogleGenAI({ apiKey });
         const model = "gemini-2.5-flash";
-        let biomeText = Object.entries(biomeStats).map(([k, v]) => `- ${k}: ${v}`).join('\n');
-        const prompt = `
-        Eres un explorador espacial. Describe este planeta para el Códex:
-        Tipo: ${PRESETS[activePreset].name}, Semilla: ${seed}, Nivel Mar: ${seaLevel}, Rugosidad: ${roughness}.
-        Biomas: \n${biomeText}
-        Inventa un nombre, describe su atmósfera y posible vida. Máx 100 palabras.
-        `;
+        
+        let prompt = "";
+        if (objectType === 'PLANET') {
+            const biomeText = Object.entries(biomeStats).map(([k, v]) => `- ${k}: ${v}`).join('\n');
+            prompt = `
+            Eres un explorador espacial. Describe este planeta para el Códex:
+            Tipo: ${planetType.replace('_', ' ')}, Semilla: ${seed}.
+            ${isGasGiant 
+                ? `Características: Bandas gaseosas (Freq: ${seaLevel.toFixed(2)}), Turbulencia: ${roughness.toFixed(2)}, Matiz: ${hueShift}°` 
+                : `Características: Nivel Mar: ${seaLevel}, Rugosidad: ${roughness}.`
+            }
+            Biomas: \n${biomeText}
+            Inventa un nombre, describe su atmósfera y posible vida. Máx 100 palabras.
+            `;
+        } else if (objectType === 'STAR') {
+            prompt = `
+            Eres un astrofísico. Describe esta estrella para el Códex:
+            Tipo: ${starType.replace('_', ' ')}, Semilla: ${seed}.
+            Granulación (Actividad Superficial): ${granulation}.
+            Color Base: ${starColorOverride || TABLA_ESTRELLAS[starType].colorHex}.
+            Temperatura: ${TABLA_ESTRELLAS[starType].temperaturaSuperficialK} K.
+            Inventa un nombre de catálogo y describe su comportamiento estelar. Máx 80 palabras.
+            `;
+        } else {
+             prompt = `
+            Eres un físico teórico. Describe esta singularidad gravitacional (Agujero Negro) para el Códex:
+            Semilla: ${seed}.
+            Disco de Acreción: Color ${bhDiskColor}, con efecto Doppler visible (lado azulado vs rojizo).
+            Radio de Acreción: ${bhDiskScale.toFixed(1)}x el radio del horizonte.
+            Lente Gravitacional: Fuerte distorsión de la luz estelar de fondo.
+            Inventa una designación (ej: Cygnus X-1) y describe la física extrema. Máx 80 palabras.
+            `;
+        }
 
         const result = await ai.models.generateContent({ model, contents: prompt });
         setAiDescription(result.text || "Sin respuesta.");
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("AI Error:", error);
-        setAiDescription("Error de comunicación.");
+        setAiDescription(`Error de IA: ${error instanceof Error ? error.message : 'Desconocido'}`);
     } finally {
         setIsAiLoading(false);
     }
@@ -466,10 +466,18 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
   const handleUnlink = () => {
       setLinkedPlanetName(null);
       setSeed(Math.random().toString(36).substring(7));
-      // Reset to arbitrary defaults to show "freedom"
-      setSeaLevel(0.5);
-      setRoughness(1.5);
-  }
+  };
+
+  const handleForceRegenerate = () => {
+      if (!linkedPlanetName) {
+          setSeed(Math.random().toString(36).substring(7));
+      } else {
+          generateBody();
+      }
+  };
+
+  const planetTypes: TipoPlaneta[] = ['DESERTICO', 'JUNGLA', 'VOLCANICO', 'ACUATICO', 'GIGANTE_GASEOSO'];
+  const starTypes = Object.keys(TABLA_ESTRELLAS) as TipoEstrella[];
 
   return (
     <div className="w-full h-full relative flex flex-col md:flex-row overflow-hidden pt-20 pb-32 pointer-events-auto">
@@ -486,7 +494,31 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
                 <span className="text-accent-cyan">⚡</span> Voxel Fabricator
              </h2>
              
-             {linkedPlanetName ? (
+             <div className="flex bg-slate-800/50 rounded-lg p-1 mb-4 border border-white/10">
+                <button 
+                    onClick={() => setObjectType('PLANET')} 
+                    className={`flex-1 py-1.5 text-xs font-bold rounded uppercase transition-colors flex items-center justify-center gap-2 ${objectType === 'PLANET' ? 'bg-accent-cyan text-space-dark' : 'text-slate-400 hover:text-white'}`}
+                    title="Planet Builder"
+                >
+                   <PlanetIcon />
+                </button>
+                <button 
+                    onClick={() => setObjectType('STAR')} 
+                    className={`flex-1 py-1.5 text-xs font-bold rounded uppercase transition-colors flex items-center justify-center gap-2 ${objectType === 'STAR' ? 'bg-accent-amber text-space-dark' : 'text-slate-400 hover:text-white'}`}
+                    title="Star Forge"
+                >
+                   <StarIcon />
+                </button>
+                <button 
+                    onClick={() => setObjectType('BLACK_HOLE')} 
+                    className={`flex-1 py-1.5 text-xs font-bold rounded uppercase transition-colors flex items-center justify-center gap-2 ${objectType === 'BLACK_HOLE' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    title="Singularity Generator"
+                >
+                   <VortexIcon />
+                </button>
+             </div>
+             
+             {linkedPlanetName && objectType === 'PLANET' && (
                  <div className="mb-6 p-3 bg-accent-cyan/10 border border-accent-cyan/30 rounded-lg">
                     <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-bold text-accent-cyan uppercase tracking-wider flex items-center gap-1">
@@ -498,53 +530,148 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
                     </div>
                     <p className="text-sm text-white font-bold truncate">{linkedPlanetName}</p>
                  </div>
-             ) : (
-                  <p className="text-xs text-slate-500 mb-6 italic">Sandbox Mode (No planet selected)</p>
              )}
 
              <div className="space-y-6 flex-grow min-w-[280px] custom-scrollbar">
-                <div>
-                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Class Template</label>
-                    <div className="grid grid-cols-2 gap-2">
-                        {Object.keys(PRESETS).map(key => (
-                            <button
-                                key={key}
-                                onClick={() => setActivePreset(key)}
-                                className={`px-2 py-2 text-xs font-bold rounded-md border transition-all duration-200 ${
-                                    activePreset === key 
-                                    ? 'bg-accent-cyan/20 border-accent-cyan text-white shadow-[0_0_10px_rgba(6,182,212,0.2)]' 
-                                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
-                                }`}
-                            >
-                                {PRESETS[key].name.split(' ')[0]}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                {objectType === 'PLANET' ? (
+                    <>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Planet Class</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {planetTypes.map(key => (
+                                    <button
+                                        key={key}
+                                        onClick={() => { setPlanetType(key); if(key === 'GIGANTE_GASEOSO') { setSeaLevel(0.5); setRoughness(0.3); } }}
+                                        className={`px-2 py-2 text-[10px] font-bold rounded-md border transition-all duration-200 uppercase ${
+                                            planetType === key 
+                                            ? 'bg-accent-cyan/20 border-accent-cyan text-white shadow-[0_0_10px_rgba(6,182,212,0.2)]' 
+                                            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        {key.replace(/_/g, ' ')}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-white/5">
-                     <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-slate-300 font-mono">
-                            <span>SEA LEVEL</span>
-                            <span className="text-accent-cyan">{seaLevel.toFixed(2)}</span>
+                        <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-white/5">
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-slate-300 font-mono">
+                                    <span>{isGasGiant ? "BAND FREQUENCY" : "SEA LEVEL"}</span>
+                                    <span className="text-accent-cyan">{seaLevel.toFixed(2)}</span>
+                                </div>
+                                <input type="range" min="0" max="1.0" step="0.01" value={seaLevel} onChange={(e) => setSeaLevel(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent-cyan" />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-slate-300 font-mono">
+                                    <span>{isGasGiant ? "TURBULENCE" : "ROUGHNESS"}</span>
+                                    <span className="text-accent-cyan">{roughness.toFixed(2)}</span>
+                                </div>
+                                <input type="range" min="0.0" max={isGasGiant ? "1.0" : "0.7"} step="0.05" value={roughness} onChange={(e) => setRoughness(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent-cyan" />
+                            </div>
+                            {isGasGiant && (
+                                <div className="space-y-1 pt-2 border-t border-white/5">
+                                    <div className="flex justify-between text-xs text-slate-300 font-mono">
+                                        <span>HUE SHIFT</span>
+                                        <span className="text-accent-cyan">{hueShift}°</span>
+                                    </div>
+                                    <div className="group relative w-full h-2 rounded-md overflow-hidden ring-1 ring-white/10">
+                                        <input 
+                                            type="range" min="0" max="360" value={hueShift} 
+                                            onChange={(e) => setHueShift(parseInt(e.target.value))}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        />
+                                        <div className="w-full h-full bg-gradient-to-r from-red-500 via-green-500 to-blue-500"></div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <input type="range" min="0" max="1.0" step="0.01" value={seaLevel} onChange={(e) => setSeaLevel(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent-cyan" />
-                     </div>
-                     <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-slate-300 font-mono">
-                            <span>ROUGHNESS</span>
-                            <span className="text-accent-cyan">{roughness.toFixed(2)}</span>
+                    </>
+                ) : objectType === 'STAR' ? (
+                    <>
+                         <div>
+                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Star Class</label>
+                            <select 
+                                value={starType} 
+                                onChange={(e) => { 
+                                    setStarType(e.target.value as TipoEstrella); 
+                                    setStarColorOverride(''); 
+                                }}
+                                className="w-full bg-black/50 border border-slate-600 rounded px-3 py-2 text-sm text-white uppercase focus:ring-accent-amber focus:border-accent-amber"
+                            >
+                                {starTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+                            </select>
                         </div>
-                        <input type="range" min="0.1" max="3.0" step="0.1" value={roughness} onChange={(e) => setRoughness(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent-cyan" />
-                     </div>
-                     <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-slate-300 font-mono">
-                            <span>FREQUENCY</span>
-                            <span className="text-accent-cyan">{frequency.toFixed(2)}</span>
+
+                        <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-white/5">
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-slate-300 font-mono">
+                                    <span>GRANULATION (NOISE)</span>
+                                    <span className="text-accent-amber">{granulation.toFixed(1)}</span>
+                                </div>
+                                <input type="range" min="1.0" max="10.0" step="0.1" value={granulation} onChange={(e) => setGranulation(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent-amber" />
+                            </div>
+                            
+                            <div className="space-y-2 pt-2 border-t border-white/5">
+                                 <label className="block text-xs font-bold text-slate-400 uppercase">Custom Hex Color</label>
+                                 <div className="flex gap-2">
+                                     <input 
+                                        type="color" 
+                                        value={starColorOverride || TABLA_ESTRELLAS[starType].colorHex} 
+                                        onChange={(e) => setStarColorOverride(e.target.value)}
+                                        className="h-8 w-8 bg-transparent border-none cursor-pointer"
+                                     />
+                                     <input 
+                                        type="text" 
+                                        value={starColorOverride || TABLA_ESTRELLAS[starType].colorHex} 
+                                        onChange={(e) => setStarColorOverride(e.target.value)}
+                                        className="flex-1 bg-black/50 border border-slate-600 rounded px-2 text-xs font-mono text-white"
+                                     />
+                                 </div>
+                            </div>
                         </div>
-                        <input type="range" min="0.5" max="3.0" step="0.1" value={frequency} onChange={(e) => setFrequency(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-accent-cyan" />
-                     </div>
-                </div>
+                    </>
+                ) : (
+                    <>
+                         {/* BLACK HOLE CONTROLS */}
+                        <div className="space-y-4 p-4 bg-black/30 rounded-lg border border-white/5">
+                             <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-slate-300 font-mono">
+                                    <span>ACCRETION RADIUS</span>
+                                    <span className="text-purple-400">{bhDiskScale.toFixed(1)}</span>
+                                </div>
+                                <input type="range" min="2.5" max="8.0" step="0.1" value={bhDiskScale} onChange={(e) => setBhDiskScale(parseFloat(e.target.value))} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                            </div>
+                            
+                            <div className="space-y-2 pt-2 border-t border-white/5">
+                                 <label className="block text-xs font-bold text-slate-400 uppercase">Accretion Color</label>
+                                 <div className="flex gap-2">
+                                     <input 
+                                        type="color" 
+                                        value={bhDiskColor} 
+                                        onChange={(e) => setBhDiskColor(e.target.value)}
+                                        className="h-8 w-8 bg-transparent border-none cursor-pointer"
+                                     />
+                                     <input 
+                                        type="text" 
+                                        value={bhDiskColor} 
+                                        onChange={(e) => setBhDiskColor(e.target.value)}
+                                        className="flex-1 bg-black/50 border border-slate-600 rounded px-2 text-xs font-mono text-white"
+                                     />
+                                 </div>
+                            </div>
+
+                            <div className="p-2 bg-slate-800/50 rounded text-[10px] text-slate-400">
+                                <p className="mb-1"><strong>Simulation Active:</strong></p>
+                                <ul className="list-disc pl-3 space-y-1">
+                                    <li>Space Skipping (Optimized)</li>
+                                    <li>Dynamic Doppler Tint</li>
+                                    <li>Transparency Support</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 <div>
                     <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Seed</label>
@@ -554,9 +681,9 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
                             value={seed} 
                             onChange={(e) => setSeed(e.target.value)} 
                             className="w-full bg-black/50 border border-slate-600 rounded px-3 py-2 text-sm text-white font-mono" 
-                            disabled={!!linkedPlanetName} // Disable editing seed when linked to preserve consistency
+                            disabled={!!linkedPlanetName && objectType === 'PLANET'} 
                         />
-                        {!linkedPlanetName && (
+                        {(!linkedPlanetName || objectType !== 'PLANET') && (
                             <button onClick={() => setSeed(Math.random().toString(36).substring(7))} className="p-2 bg-white/5 text-slate-300 hover:text-accent-cyan rounded border border-slate-600 hover:bg-white/10">
                                 <DiceIcon />
                             </button>
@@ -566,11 +693,12 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
              </div>
 
              <div className="mt-4 space-y-3 min-w-[280px]">
-                <button onClick={generatePlanet} className="w-full py-3 bg-accent-cyan text-space-dark font-bold rounded-md shadow-lg hover:bg-cyan-300 transition-all flex justify-center items-center gap-2 uppercase tracking-wide">
-                    {isGenerating ? <span className="animate-spin">⟳</span> : <RefreshIcon />} <span>Regenerate</span>
+                <button onClick={handleForceRegenerate} className="w-full py-3 bg-accent-cyan text-space-dark font-bold rounded-md shadow-lg hover:bg-cyan-300 transition-all flex justify-center items-center gap-2 uppercase tracking-wide">
+                    {isGenerating ? <span className="animate-spin">⟳</span> : <RefreshIcon />} 
+                    <span>{(linkedPlanetName && objectType === 'PLANET') ? "Re-Render" : "New Seed"}</span>
                 </button>
                 <button onClick={handleAiDescribe} disabled={isAiLoading} className="w-full py-3 bg-purple-600/20 border border-purple-500/50 text-purple-300 font-bold rounded-md shadow-lg hover:bg-purple-600/40 transition-all flex justify-center items-center gap-2 disabled:opacity-50 uppercase tracking-wide">
-                    {isAiLoading ? <span className="animate-pulse">...</span> : <><SparklesIcon /> <span>AI Analyze</span></>}
+                    {isAiLoading ? <span className="animate-pulse">Thinking...</span> : <><SparklesIcon /> <span>AI Analyze</span></>}
                 </button>
              </div>
         </div>
@@ -579,17 +707,17 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
         <div className="flex-1 relative h-full w-full rounded-l-2xl overflow-hidden mx-4 my-4 border border-white/5 shadow-inner bg-black/40">
             <div ref={mountRef} className="absolute inset-0 w-full h-full" />
             
-            {/* TOGGLE BUTTON */}
+            {/* TOGGLE BUTTON - Z-INDEX INCREASED TO 50 */}
             <button 
                 onClick={() => setIsControlsVisible(!isControlsVisible)}
-                className="absolute top-4 left-4 z-30 p-2 bg-slate-900/80 text-slate-200 rounded-md border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md"
+                className="absolute top-4 left-4 z-50 p-2 bg-slate-900/80 text-slate-200 rounded-md border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md"
                 title={isControlsVisible ? "Hide Controls" : "Show Controls"}
             >
                 {isControlsVisible ? <EyeOffIcon /> : <EyeIcon />}
             </button>
             
             {/* LINKED INDICATOR OVERLAY */}
-            {linkedPlanetName && (
+            {linkedPlanetName && objectType === 'PLANET' && (
                 <div className="absolute top-4 left-16 z-30 px-3 py-1.5 bg-accent-cyan/10 border border-accent-cyan/30 text-accent-cyan text-xs font-bold rounded-md backdrop-blur-md animate-pulse">
                     VISUALIZING: {linkedPlanetName.toUpperCase()}
                 </div>
@@ -607,12 +735,14 @@ const PlanetGenerator3D: React.FC<PlanetGenerator3DProps> = ({ isPaused = false 
 
             <div className="absolute top-4 right-4 pointer-events-none z-10">
                 <div className="bg-slate-900/80 backdrop-blur-sm p-4 rounded-lg border border-white/10 shadow-lg">
-                    <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-wider">Surface Composition</h4>
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-wider">
+                        {objectType === 'PLANET' ? 'Surface Composition' : objectType === 'STAR' ? 'Stellar Telemetry' : 'Singularity Data'}
+                    </h4>
                     <div className="space-y-1.5">
-                        {Object.entries(biomeStats).map(([name, pct]) => (
+                        {Object.entries(biomeStats).map(([name, val]) => (
                             <div key={name} className="flex justify-between text-xs w-48 border-b border-white/5 pb-1 last:border-0">
                                 <span className="text-slate-300">{name}</span>
-                                <span className="font-mono text-accent-cyan">{pct}</span>
+                                <span className={`font-mono ${objectType === 'STAR' ? 'text-accent-amber' : objectType === 'BLACK_HOLE' ? 'text-purple-400' : 'text-accent-cyan'}`}>{val}</span>
                             </div>
                         ))}
                     </div>

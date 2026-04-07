@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { Sistema, Estrella, ObjetoOrbital, CuerpoEspecial } from '../types';
+import type { Sistema, Estrella, ObjetoOrbital, CuerpoEspecial, ObjetoPlaneta, ObjetoCinturonAsteroides } from '../types';
 
 // Icons used internally
 const TerminalIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>;
@@ -26,7 +26,7 @@ const GeminiConsole: React.FC<GeminiConsoleProps> = ({ globalViewMode, system, s
     }, []);
 
     // Simulate typing effect for the latest message
-    const typeWriter = (text: string) => {
+    const typeWriter = useCallback((text: string) => {
         setTypingLog('');
         let i = 0;
         const speed = 15; // ms
@@ -40,7 +40,7 @@ const GeminiConsole: React.FC<GeminiConsoleProps> = ({ globalViewMode, system, s
                 setTypingLog('');
             }
         }, speed);
-    };
+    }, [addLog]);
 
     // --- CONTEXT AWARENESS ---
     
@@ -51,7 +51,7 @@ const GeminiConsole: React.FC<GeminiConsoleProps> = ({ globalViewMode, system, s
         } else if (globalViewMode === 'SYSTEM' && system) {
              typeWriter(`[WARP] Arriving at ${system.nombre}. Threat Assessment: ${system.nivelPeligro}/10.`);
         }
-    }, [globalViewMode, system?.id]); // Use IDs to avoid re-triggering on object mutations
+    }, [globalViewMode, system, typeWriter]); // Use IDs to avoid re-triggering on object mutations
 
     // 2. Monitor Selections
     useEffect(() => {
@@ -61,10 +61,10 @@ const GeminiConsole: React.FC<GeminiConsoleProps> = ({ globalViewMode, system, s
                 const s = selection as Estrella;
                 logText = `[TARGET] STAR: ${s.nombreProvisional} // Class ${s.claseEstelar} // Temp: ${s.temperaturaSuperficial}.`;
             } else if (selection.tipo === 'PLANETA') {
-                const p = (selection as ObjetoOrbital).cargaUtil as any; 
+                const p = (selection as ObjetoPlaneta).cargaUtil; 
                 logText = `[TARGET] PLANET: ${p.tituloTipoPlaneta} // Atm: ${p.tipoAtmosfera} // Bio-Scan: ${p.densidadVida}.`;
             } else if (selection.tipo === 'CINTURON_ASTEROIDES') {
-                const a = (selection as any).cargaUtil;
+                const a = (selection as ObjetoCinturonAsteroides).cargaUtil;
                  logText = `[TARGET] ASTEROID BELT // Density: ${a.densidad} // Comp: ${a.composicion}.`;
             } else if (selection.tipo === 'AGUJERO_NEGRO') {
                  logText = `[WARNING] GRAVITATIONAL SINGULARITY DETECTED. EVENT HORIZON PROXIMITY ALERT.`;
@@ -74,14 +74,14 @@ const GeminiConsole: React.FC<GeminiConsoleProps> = ({ globalViewMode, system, s
             
             if (logText) typeWriter(logText);
         }
-    }, [selection?.id]); // Trigger only when ID changes
+    }, [selection, typeWriter]); // Trigger only when ID changes
 
     // 3. Monitor Custom Messages (e.g. Hyperjumps)
     useEffect(() => {
         if (customMessage) {
             typeWriter(customMessage);
         }
-    }, [customMessage]);
+    }, [customMessage, typeWriter]);
 
 
     // Auto-scroll

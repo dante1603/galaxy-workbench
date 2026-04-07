@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { get, set, del } from 'idb-keyval';
 import { useStaticDataCtx } from '../context/StaticDataContext';
 import { 
     getAllWeapons,
@@ -9,35 +10,18 @@ import {
     getAllEffects,
 } from '../services/dataService';
 import type { Jugador, Fauna, Planta, Mineral, Material, ReinoAnimal, Bioma, ArquetipoCristal, TipoCristal, CategoriaBiome, Dieta, TamanoFauna, OrigenMaterial, Locomocion, Arma, Herramienta, Receta, Efecto } from '../types';
+import { subscribeToWikiEntries, WikiEntry } from '../api/wiki';
 
-export type WikiTab = 'Jugador' | 'Especies' | 'Fauna' | 'Flora' | 'Consumibles' | 'Minerales' | 'Cristales' | 'Materiales' | 'Biomas' | 'Efectos' | 'Armas' | 'Herramientas' | 'Crafteo';
-export type WikiEntityType = 'Jugador' | 'Especie' | 'Fauna' | 'Flora' | 'Mineral' | 'Cristal' | 'Material' | 'Biome' | 'Efecto' | 'Arma' | 'Herramienta' | 'Crafteo' | 'Recipe';
+export type WikiTab = 'General' | 'Jugador' | 'Especies' | 'Fauna' | 'Flora' | 'Consumibles' | 'Minerales' | 'Cristales' | 'Materiales' | 'Biomas' | 'Efectos' | 'Armas' | 'Herramientas' | 'Crafteo';
+export type WikiEntityType = 'General' | 'Jugador' | 'Especie' | 'Fauna' | 'Flora' | 'Mineral' | 'Cristal' | 'Material' | 'Biome' | 'Efecto' | 'Arma' | 'Herramienta' | 'Crafteo' | 'Recipe';
 
 const WIKI_STORAGE_PREFIX = 'galaxy-workbench-wiki-';
-
-// --- LocalStorage Helper Functions ---
-const getStoredData = <T,>(key: string): T | null => {
-    try {
-        const item = window.localStorage.getItem(key);
-        return item ? JSON.parse(item) : null;
-    } catch (error) {
-        console.error(`Error reading from localStorage key “${key}”:`, error);
-        return null;
-    }
-};
-
-const setStoredData = <T,>(key: string, value: T): void => {
-    try {
-        const serializedValue = JSON.stringify(value);
-        window.localStorage.setItem(key, serializedValue);
-    } catch (error) {
-        console.error(`Error writing to localStorage key “${key}”:`, error);
-    }
-};
+const FAUNA_KEY = `${WIKI_STORAGE_PREFIX}fauna`;
 
 /**
  * A custom hook to manage the state and logic for the WikiPanel.
  * Consumes StaticDataContext for base data and handles local overrides/filters.
+ * Migrated to IndexedDB (idb-keyval) to support large datasets/images.
  */
 export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
     const { species, fauna, plants, minerals, materials, biomes, crystals } = useStaticDataCtx();
@@ -45,6 +29,7 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
     const [isLoading, setIsLoading] = useState(true);
 
     // Data states (Local copies that can be edited)
+    const [allWikiEntries, setAllWikiEntries] = useState<WikiEntry[]>([]);
     const [allPlayers, setAllPlayers] = useState<Jugador[]>([]);
     const [allFauna, setAllFauna] = useState<Fauna[]>([]);
     
@@ -83,6 +68,8 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
     
     // Load and Sync Data
     useEffect(() => {
+        let unsubscribeWiki: () => void;
+
         if (isOpen && isLoading) {
             const loadData = async () => {
                 const [players, weapons, tools, recipes, effects] = await Promise.all([
@@ -94,23 +81,57 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
                 setAllRecipes(recipes);
                 setAllEffects(effects);
 
-                const storedFauna = getStoredData<Fauna[]>(`${WIKI_STORAGE_PREFIX}fauna`);
-                if (storedFauna) {
-                    setAllFauna(storedFauna);
-                } else {
-                    setAllFauna(fauna);
+                // Load Fauna from IndexedDB
+                try {
+                    let storedFauna = await get<Fauna[]>(FAUNA_KEY);
+                    
+                    // Migration Logic: If not in IDB, check LocalStorage, migrate, and delete from LS
+                    if (!storedFauna) {
+                        const lsFauna = window.localStorage.getItem(FAUNA_KEY);
+                        if (lsFauna) {
+                            try {
+                                storedFauna = JSON.parse(lsFauna);
+                                await set(FAUNA_KEY, storedFauna); // Migrate
+                                window.localStorage.removeItem(FAUNA_KEY); // Clean up
+                                console.log("Migrated Fauna data from LocalStorage to IndexedDB");
+                            } catch (e) {
+                                console.warn("Failed to migrate LocalStorage fauna data", e);
+                            }
+                        }
+                    }
+
+                    if (storedFauna) {
+                        setAllFauna(storedFauna);
+                    } else {
+                        setAllFauna(fauna);
+                    }
+                } catch (err) {
+                    console.error("Error loading fauna from storage:", err);
+                    setAllFauna(fauna); // Fallback
                 }
+
+                // Subscribe to Firebase Wiki Entries
+                unsubscribeWiki = subscribeToWikiEntries(
+                    (entries) => setAllWikiEntries(entries),
+                    (error) => console.error("Error loading wiki entries:", error)
+                );
 
                 setIsLoading(false);
             };
             loadData();
         }
+
+        return () => {
+            if (unsubscribeWiki) {
+                unsubscribeWiki();
+            }
+        };
     }, [isOpen, isLoading, fauna]);
     
     const addFauna = useCallback((newFauna: Fauna) => {
       setAllFauna(prev => {
         const updatedFauna = [newFauna, ...prev];
-        setStoredData(`${WIKI_STORAGE_PREFIX}fauna`, updatedFauna);
+        set(FAUNA_KEY, updatedFauna).catch(err => console.error("IDB Write Error", err));
         return updatedFauna;
       });
     }, []);
@@ -118,7 +139,7 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
     const updateFauna = useCallback((updatedFauna: Fauna) => {
         setAllFauna(prev => {
             const updatedList = prev.map(f => f.id === updatedFauna.id ? updatedFauna : f);
-            setStoredData(`${WIKI_STORAGE_PREFIX}fauna`, updatedList);
+            set(FAUNA_KEY, updatedList).catch(err => console.error("IDB Write Error", err));
             return updatedList;
         });
     }, []);
@@ -126,7 +147,7 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
     const deleteFauna = useCallback((faunaId: string) => {
         setAllFauna(prev => {
             const updatedList = prev.filter(f => f.id !== faunaId);
-            setStoredData(`${WIKI_STORAGE_PREFIX}fauna`, updatedList);
+            set(FAUNA_KEY, updatedList).catch(err => console.error("IDB Write Error", err));
             return updatedList;
         });
     }, []);
@@ -138,13 +159,17 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
         return (
             (item.nombre && item.nombre.toLowerCase().includes(term)) ||
             (item.descripcion && item.descripcion.toLowerCase().includes(term)) ||
-            (item.tipo && item.tipo.toLowerCase().includes(term))
+            (item.tipo && item.tipo.toLowerCase().includes(term)) ||
+            (item.title && item.title.toLowerCase().includes(term)) ||
+            (item.content && item.content.toLowerCase().includes(term)) ||
+            (item.category && item.category.toLowerCase().includes(term))
         );
     };
 
     const filteredData = useMemo(() => {
         let data: any[] = [];
         switch (activeTab) {
+            case 'General': data = allWikiEntries; break;
             case 'Jugador': data = allPlayers; break;
             case 'Especies': 
                 data = speciesDietFilter === 'all' ? species : species.filter(s => s.metabolismo.dieta === speciesDietFilter);
@@ -204,7 +229,7 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
         return data.filter(matchesSearch);
 
     }, [
-        activeTab, allPlayers, allFauna, crystals, biomes, materials, species, plants, minerals, allWeapons, allTools, allRecipes, allEffects,
+        activeTab, allWikiEntries, allPlayers, allFauna, crystals, biomes, materials, species, plants, minerals, allWeapons, allTools, allRecipes, allEffects,
         faunaFilter, dietaFilter, tamanoFilter, locomotionFilter, crystalFilter, biomeFilter, materialFilter, searchTerm,
         floraStructureFilter, floraFoliageFilter, mineralRarityFilter, effectTypeFilter, weaponTypeFilter, toolTypeFilter, speciesDietFilter, materialRarityFilter
     ]);
@@ -220,6 +245,7 @@ export const useWikiData = (isOpen: boolean, activeTab: WikiTab) => {
     };
 
     const allData = { 
+        allWikiEntries,
         allPlayers, 
         allFauna, 
         allPlants: plants, 

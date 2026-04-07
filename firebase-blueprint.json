@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "WikiEntry": {
+      "title": "Wiki Entry",
+      "description": "An entry in the Galaxy Workbench Wiki.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the entry." },
+        "category": { "type": "string", "description": "The category of the entry (e.g., Celestial Bodies, Physics)." },
+        "content": { "type": "string", "description": "The markdown content of the entry." },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags for searching." },
+        "authorId": { "type": "string", "description": "The UID of the user who created the entry." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp." }
+      },
+      "required": ["title", "category", "content", "authorId", "createdAt", "updatedAt"]
+    },
+    "GalaxySeed": {
+      "title": "Galaxy Seed",
+      "description": "A saved galaxy configuration.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name given to the galaxy." },
+        "seed": { "type": "number", "description": "The procedural generation seed." },
+        "config": {
+          "type": "object",
+          "description": "Additional configuration parameters.",
+          "properties": {
+            "starCount": { "type": "number" },
+            "galaxyRadius": { "type": "number" },
+            "spiralArms": { "type": "number" }
+          }
+        },
+        "authorId": { "type": "string", "description": "The UID of the user who saved the galaxy." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["name", "seed", "config", "authorId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/wiki_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/WikiEntry" },
+      "description": "Stores all wiki entries."
+    },
+    "/galaxies/{galaxyId}": {
+      "schema": { "$ref": "#/entities/GalaxySeed" },
+      "description": "Stores saved galaxy configurations."
+    }
+  }
+}

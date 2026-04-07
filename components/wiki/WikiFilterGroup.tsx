@@ -10,7 +10,7 @@ interface WikiFilterGroupProps {
   filterKey: string;
   title: string;
   currentValue: string;
-  setter: (value: any) => void;
+  setter: (value: string) => void;
   options: { value: string; label: string; color?: string }[];
   openFilter: string | null;
   setOpenFilter: (key: string | null) => void;

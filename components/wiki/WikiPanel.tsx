@@ -7,15 +7,13 @@ import CreateFaunaForm from './CreateFaunaForm';
 import CraftingGrid from './CraftingGrid';
 import SelectionDetails from './SelectionDetails';
 // FIX: Use correct Spanish type names from types.ts
-import type { EspecieInteligente, TipoCristal, ReinoAnimal, CategoriaBiome, Dieta, TamanoFauna, OrigenMaterial, Material, Locomocion, Receta, Arma, Herramienta, Jugador, Estrella, ObjetoOrbital, CuerpoEspecial, Fauna, GameEntity } from '../../types';
+import type { TipoCristal, ReinoAnimal, CategoriaBiome, Dieta, TamanoFauna, OrigenMaterial, Locomocion, Receta, Estrella, ObjetoOrbital, CuerpoEspecial, Fauna, GameEntity } from '../../types';
 
 interface WikiPanelProps {
   isOpen: boolean;
   onClose: () => void;
   initialTarget?: { type: string; id: string } | null;
   selection3D?: Estrella | ObjetoOrbital | CuerpoEspecial | null;
-  allSpecies: EspecieInteligente[];
-  allMaterials: Material[];
   onUpdateSpeciesImage: (speciesId: string, imageUrl: string) => void;
 }
 
@@ -45,7 +43,7 @@ const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="1
 
 type ActiveTabType = WikiTab | 'Selection';
 
-const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, selection3D, allSpecies, allMaterials, onUpdateSpeciesImage }) => {
+const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, selection3D, onUpdateSpeciesImage }) => {
   const [activeTab, setActiveTab] = useState<ActiveTabType>('Jugador');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
@@ -104,7 +102,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
         setActiveTab('Jugador'); // Reset on close
         setters.setSearchTerm('');
       }
-  }, [isOpen, isLoading, initialTarget, selection3D]); // Removed handleNavigate from deps to avoid loop
+  }, [isOpen, isLoading, initialTarget, selection3D, handleNavigate, setters]);
   
   useEffect(() => {
     if (!isOpen) {
@@ -183,7 +181,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
   };
 
   const handleEditItem = (item: GameEntity) => {
-    if (item.hasOwnProperty('reino')) { // Simple check if it's a Fauna object
+    if ('reino' in item) { // Simple check if it's a Fauna object
       setEditingItem(item as Fauna);
       setIsFormOpen(true);
     }

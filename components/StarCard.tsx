@@ -3,40 +3,10 @@ import React, { useState } from 'react';
 import type { Sistema, CargaUtilPlaneta, TipoPlaneta } from '../types';
 import SystemHeader from './starcards/SystemHeader';
 import DiagnosticModal from './modals/DiagnosticModal';
+import PlanetThumbnail from './PlanetThumbnail';
 import { useWorkbenchStore } from '../state/workbenchStore';
 
 const InspectIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
-
-
-/**
- * A simple, static icon to represent a planet, color-coded by its type.
- * Replaces the buggy ProceduralPlanet component.
- */
-const PlanetIcon: React.FC<{ planet: CargaUtilPlaneta }> = ({ planet }) => {
-    const planetColors: Record<TipoPlaneta, string> = {
-        DESERTICO: 'bg-amber-600 shadow-[0_0_10px_rgba(217,119,6,0.5)]',
-        JUNGLA: 'bg-emerald-600 shadow-[0_0_10px_rgba(5,150,105,0.5)]',
-        VOLCANICO: 'bg-red-700 shadow-[0_0_10px_rgba(185,28,28,0.5)]',
-        ACUATICO: 'bg-sky-600 shadow-[0_0_10px_rgba(2,132,199,0.5)]',
-        GIGANTE_GASEOSO: 'bg-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.5)]',
-    };
-    const colorClass = planetColors[planet.tipoPlaneta] || 'bg-slate-600';
-    const isGasGiant = planet.tipoPlaneta === 'GIGANTE_GASEOSO';
-
-    return (
-        <div className={`relative flex-shrink-0 w-20 h-20 rounded-full ${colorClass} border-2 border-white/10 group-hover:scale-105 transition-all duration-300 overflow-hidden`}>
-            {isGasGiant && (
-                <>
-                    <div className="absolute top-1/4 left-0 w-full h-2 bg-black/10"></div>
-                    <div className="absolute top-1/2 left-0 w-full h-3 bg-black/10 -translate-y-2"></div>
-                    <div className="absolute bottom-1/3 left-0 w-full h-1 bg-white/10"></div>
-                </>
-            )}
-             {/* Gloss effect */}
-            <div className="absolute top-2 right-4 w-4 h-2 bg-white/20 rounded-full transform rotate-45 blur-[2px]"></div>
-        </div>
-    );
-};
 
 
 interface SystemCardProps {
@@ -101,7 +71,10 @@ const SystemCard: React.FC<SystemCardProps> = ({ system, onShowInWiki }) => {
                                     aria-label={`Inspect ${payload.tituloTipoPlaneta}`}
                                 >
                                     <div className="flex items-center space-x-4 relative z-10">
-                                        <PlanetIcon planet={payload} />
+                                        <div className="relative flex-shrink-0 w-20 h-20 group-hover:scale-105 transition-all duration-300">
+                                            <PlanetThumbnail planet={payload} id={mainObject.id} />
+                                        </div>
+
                                         <div className="flex-1">
                                             <h5 className="font-bold text-slate-200 group-hover:text-white transition-colors">{payload.tituloTipoPlaneta}</h5>
                                             <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 font-mono">

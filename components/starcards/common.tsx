@@ -1,6 +1,6 @@
 
 import React from 'react';
-import type { TipoPlaneta, TipoCristal, EstructuraPlanta, FollajePlanta, ReproduccionPlanta } from '../../types';
+import type { TipoPlaneta, TipoCristal, EstructuraPlanta, FollajePlanta } from '../../types';
 
 export const CRYSTAL_COLORS: Record<TipoCristal, string> = {
   FUEGO: '#ef4444',       // red-500

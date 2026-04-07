@@ -7,7 +7,10 @@ import CreateFaunaForm from './wiki/CreateFaunaForm';
 import CraftingGrid from './wiki/CraftingGrid';
 import SelectionDetails from './wiki/SelectionDetails';
 import WikiFilters from './wiki/WikiFilters';
+import GeneralWikiEntryCard from './wiki/GeneralWikiEntryCard';
+import CreateGeneralEntryForm from './wiki/CreateGeneralEntryForm';
 import type { Receta, Estrella, ObjetoOrbital, CuerpoEspecial, Fauna, GameEntity } from '../types';
+import type { WikiEntry } from '../api/wiki';
 
 interface WikiPanelProps {
   isOpen: boolean;
@@ -51,6 +54,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Fauna | null>(null);
+  const [editingGeneralItem, setEditingGeneralItem] = useState<WikiEntry | null>(null);
   const lastScrollTop = useRef(0);
   const headerTranslateY = useRef(0);
   const scrollableContainerRef = useRef<HTMLDivElement>(null);
@@ -90,7 +94,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
         setActiveTab('Jugador'); // Reset on close
         setters.setSearchTerm('');
       }
-  }, [isOpen, isLoading, initialTarget, selection3D]); 
+  }, [isOpen, isLoading, initialTarget, selection3D, handleNavigate, setters]); 
   
   useEffect(() => {
     if (!isOpen) {
@@ -142,7 +146,7 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
   }, [filterHeight]);
 
   const baseTabs: WikiTab[] = [
-    'Jugador', 'Especies', 'Fauna', 'Flora', 'Consumibles', 'Biomas', 'Minerales', 
+    'General', 'Jugador', 'Especies', 'Fauna', 'Flora', 'Consumibles', 'Biomas', 'Minerales', 
     'Cristales', 'Materiales', 'Efectos', 'Armas', 'Herramientas', 'Crafteo'
   ];
   const tabs: ActiveTabType[] = selection3D ? ['Selection', ...baseTabs] : baseTabs;
@@ -155,21 +159,32 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
   const currentItemType = activeTab !== 'Selection' ? contentMap[activeTab] : undefined;
 
   const handleOpenCreator = () => {
-    setEditingItem(null);
-    setActiveTab('Fauna');
-    setIsFormOpen(true);
+    if (activeTab === 'General') {
+      setEditingGeneralItem(null);
+      setIsFormOpen(true);
+    } else {
+      setEditingItem(null);
+      setActiveTab('Fauna');
+      setIsFormOpen(true);
+    }
   };
 
   const handleEditItem = (item: GameEntity) => {
-    if (item.hasOwnProperty('reino')) { // Simple check if it's a Fauna object
+    if ('reino' in item) { // Simple check if it's a Fauna object
       setEditingItem(item as Fauna);
       setIsFormOpen(true);
     }
   };
 
+  const handleEditGeneralItem = (item: WikiEntry) => {
+    setEditingGeneralItem(item);
+    setIsFormOpen(true);
+  };
+
   const handleDeleteItem = (type: string, id: string) => {
     if (type === 'Fauna') {
-        if(confirm(`¿Estás seguro de que quieres eliminar esta criatura? Esta acción no se puede deshacer.`)) {
+        const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar esta criatura? Esta acción no se puede deshacer.`);
+        if(confirmed) {
             deleteFauna(id);
         }
     }
@@ -246,6 +261,16 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
             <div className="p-4">
               <CraftingGrid recipes={filteredData as Receta[]} allItems={[...allData.allMaterials, ...allData.allWeapons, ...allData.allTools]} />
             </div>
+          ) : activeTab === 'General' && filteredData.length > 0 ? (
+            <div className={`p-4 gap-3 ${viewMode === 'grid' ? 'grid grid-cols-2' : 'space-y-3'}`}>
+              {(filteredData as WikiEntry[]).map(item => (
+                <GeneralWikiEntryCard
+                  key={item.id}
+                  entry={item}
+                  onEdit={handleEditGeneralItem}
+                />
+              ))}
+            </div>
           ) : filteredData.length > 0 && currentItemType ? (
             <div className={`p-4 gap-3 ${viewMode === 'grid' ? 'grid grid-cols-2' : 'space-y-3'}`}>
               {filteredData.map(item => (
@@ -299,12 +324,19 @@ const WikiPanel: React.FC<WikiPanelProps> = ({ isOpen, onClose, initialTarget, s
           </div>
           
           {isFormOpen ? (
-            <CreateFaunaForm 
-              onClose={() => { setIsFormOpen(false); setEditingItem(null); }}
-              onSave={addFauna}
-              onUpdate={updateFauna}
-              initialData={editingItem}
-            />
+            activeTab === 'General' ? (
+              <CreateGeneralEntryForm
+                onClose={() => { setIsFormOpen(false); setEditingGeneralItem(null); }}
+                initialData={editingGeneralItem}
+              />
+            ) : (
+              <CreateFaunaForm 
+                onClose={() => { setIsFormOpen(false); setEditingItem(null); }}
+                onSave={addFauna}
+                onUpdate={updateFauna}
+                initialData={editingItem}
+              />
+            )
           ) : renderMainContent()}
 
         </div>

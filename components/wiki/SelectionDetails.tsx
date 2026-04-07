@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Estrella, ObjetoOrbital, CuerpoEspecial, CargaUtilPlaneta } from '../../types';
+import type { Estrella, ObjetoOrbital, CuerpoEspecial } from '../../types';
 import { StatItem, GameplayInfoSection, WarningIcon, TargetIcon, PlanetTypeBadge, CrystalIcon, CRYSTAL_COLORS } from '../starcards/common';
 
 interface SelectionDetailsProps {

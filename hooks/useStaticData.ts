@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
+import { get, set } from 'idb-keyval';
 import { 
   getAllSpecies, 
   getAllMaterials, 
@@ -51,22 +52,35 @@ export const useStaticData = () => {
           getAllBiomes()
         ]);
 
-        // Check Local Storage for Species overrides
-        const storedSpeciesJson = window.localStorage.getItem(SPECIES_STORAGE_KEY);
+        // Check IndexedDB for Species overrides (Images, etc.)
         let finalSpecies = loadedSpecies;
+        try {
+            let storedSpecies = await get<EspecieInteligente[]>(SPECIES_STORAGE_KEY);
+            
+            // Migration Logic: Check LocalStorage fallback
+            if (!storedSpecies) {
+                 const lsSpecies = window.localStorage.getItem(SPECIES_STORAGE_KEY);
+                 if (lsSpecies) {
+                     try {
+                         storedSpecies = JSON.parse(lsSpecies);
+                         await set(SPECIES_STORAGE_KEY, storedSpecies);
+                         window.localStorage.removeItem(SPECIES_STORAGE_KEY);
+                         console.log("Migrated Species data to IndexedDB");
+                     } catch (e) {
+                         console.warn("Failed to migrate species data", e);
+                     }
+                 }
+            }
 
-        if (storedSpeciesJson) {
-            try {
-                const storedSpecies = JSON.parse(storedSpeciesJson) as EspecieInteligente[];
+            if (storedSpecies) {
                 // Merge logic: Update static species with stored data (images, edits)
-                // This assumes ID persistence
                 finalSpecies = loadedSpecies.map(s => {
                     const stored = storedSpecies.find(ss => ss.id === s.id);
                     return stored ? { ...s, ...stored } : s;
                 });
-            } catch (e) {
-                console.error("Failed to parse stored species", e);
             }
+        } catch (e) {
+            console.error("Error accessing IndexedDB for species", e);
         }
 
         setSpecies(finalSpecies);
@@ -84,22 +98,17 @@ export const useStaticData = () => {
     loadData();
   }, []);
 
-  /** Updates the image URL for a species and persists to LocalStorage */
+  /** Updates the image URL for a species and persists to IndexedDB */
   const handleUpdateSpeciesImage = useCallback((speciesId: string, imageUrl: string) => {
     setSpecies(prevSpecies => {
       const updatedSpecies = prevSpecies.map(s =>
         s.id === speciesId ? { ...s, urlImagen: imageUrl } : s
       );
       
-      // Persist ONLY the modified fields (to save space/logic) or the whole object
-      // For simplicity here, we save the whole modified species array
-      // In a real app with huge Base64, IndexedDB would be better, but localStorage works for a few images.
-      try {
-          window.localStorage.setItem(SPECIES_STORAGE_KEY, JSON.stringify(updatedSpecies));
-      } catch (e) {
-          console.warn("Quota exceeded or storage error", e);
-          alert("Storage limit reached. Image might not persist on reload.");
-      }
+      // Persist to IndexedDB (supports large binary strings)
+      set(SPECIES_STORAGE_KEY, updatedSpecies).catch(e => {
+          console.error("Failed to save species image to storage", e);
+      });
 
       return updatedSpecies;
     });

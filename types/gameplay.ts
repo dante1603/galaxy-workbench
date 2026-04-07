@@ -95,8 +95,21 @@ export interface Receta extends EntidadBase {
   requisitoHabilidad: { habilidadId: string; nivel: number } | null;
 }
 
-// --- JUGADOR ---
+// --- PARASITO (JUGADOR REAL) ---
+export interface InfoParasito {
+  nivelConsciencia: number; // Nivel del jugador (Mental)
+  nombreSimbionte: string;
+  colorSimbionte: string; // Color del modelo 3D del parásito (la babosa)
+  tiempoVidaTotal: number; // Tiempo total jugado entre todos los cuerpos
+  huespedesPoseidos: number; // Contador de muertes/cambios de cuerpo
+}
+
+// --- JUGADOR (HOST + PARASITO) ---
 export interface Jugador extends EntidadJuego {
+  // Datos persistentes del "Alma" (El Parásito/Jugador real)
+  datosParasito: InfoParasito;
+  
+  // Datos del "Cuerpo" (El Huésped Desechable actual)
   statsBase: {
     salud: number;
     aguante: number;
@@ -106,7 +119,10 @@ export interface Jugador extends EntidadJuego {
     capacidadCarga: number;
     resistencias: Record<string, number>;
   };
-  especieId?: string;
+  
+  // Si es undefined, el parásito está en forma "pura" o en un cuerpo genérico de prueba
+  especieId?: string; 
+  
   itemsInicio: { itemId: string; cantidad: number }[];
 }
 

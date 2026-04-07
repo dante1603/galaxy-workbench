@@ -1,15 +1,24 @@
+
 import { Jugador } from '../types';
 
 const now = new Date().toISOString();
-const base = { estado: 'aprobado' as const, version: 1, fechaCreacion: now, fechaActualizacion: now };
+const base = { estado: 'aprobado' as const, version: 2, fechaCreacion: now, fechaActualizacion: now };
 
 export const ALL_PLAYERS: Jugador[] = [
   {
     ...base,
     id: 'player_base',
-    nombre: 'Jugador Arquetipo',
-    descripcion: 'Esta es la plantilla base para cualquier jugador que comience su aventura. Sus estadísticas son un punto de partida equilibrado, diseñadas para ser modificadas por la especie inteligente que elijan.',
-    tags: ['jugador', 'base'],
+    nombre: 'Simbionte Neural Alpha-1', // Nombre REAL del Jugador (El Parásito)
+    descripcion: 'Un parásito consciente capaz de reescribir el sistema nervioso de formas de vida alienígenas complejas. Proyecta una interfaz táctica directamente en el córtex visual de su anfitrión.',
+    tags: ['jugador', 'parasito', 'admin'],
+    datosParasito: {
+        nombreSimbionte: "Alpha-1",
+        nivelConsciencia: 1,
+        colorSimbionte: "#06b6d4", // Cyan fluorescente (Color del modelo 3D de la babosa)
+        tiempoVidaTotal: 0,
+        huespedesPoseidos: 0
+    },
+    // Stats del cuerpo "por defecto" (antes de elegir especie o aplicar modificadores)
     statsBase: {
       salud: 100,
       aguante: 100,
@@ -20,6 +29,6 @@ export const ALL_PLAYERS: Jugador[] = [
       resistencias: {},
     },
     itemsInicio: [],
-    // especieId se deja indefinido intencionalmente para el arquetipo base
+    // especieId undefined indica que aún no ha parasitado un cuerpo específico permanentemente
   },
 ];

@@ -1,0 +1,236 @@
+[
+  {
+    "id": 0,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Oye, como recuerdas los principios de este proyecto?, estaba pensando que podrías dejar en el código un archivo que sirva de referencia para saber hacia donde va este proyecto y sus principios de diseño y objetivos ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575536167
+  },
+  {
+    "id": 1,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Conceptualizing Design Principles**\n\nI'm currently fleshing out the concept of a dedicated file within the project. My thinking has moved towards the optimal format for this file. It needs to be easily accessible, human-readable, and easily updated, as the project evolves. I'm exploring different file formats, such as Markdown or a structured text format, and considering how to integrate it into the development workflow.\n\n\n**Establishing a Manifesto**\n\nI've decided that a dedicated file is the best path forward, and I'm settling on the name `PROJECT_MANIFESTO.md`. This offers both authority and thematic resonance. This should ensure future development adheres to the established principles and architectural vision. I feel this approach will provide a solid foundation for guiding the long-term trajectory of Galaxy Workbench.\n\n\n**Composing Core Content**\n\nI'm now drafting the `PROJECT_MANIFESTO.md` content, focusing on its title, purpose, and detailed design principles. These principles cover visuals (glassmorphism, Tailwind), UX (immersive, console-like), and code (TypeScript, React, modular). The architecture section details state management (Zustand), 3D (Three.js), and AI integration (Google Gemini). I'm also outlining future goals for planetary exploration and more.\n\n\n**Crafting a Professional Voice**\n\nI'm now focusing on the tone and content of the manifesto, specifically aiming for a professional and visionary voice that will resonate with senior engineers. I'm incorporating specific color references like `accent-cyan` and detailed tech stack information, such as `Zustand` and `Three.js`, to maintain consistency in future prompts and to provide a comprehensive guide to the project's design. The `PROJECT_MANIFESTO.md` is becoming a robust guide for all future development.\n\n\n**Clarifying Key Aspects**\n\nI'm solidifying the data-driven architecture, ensuring game logic is reliant on static definitions within `/data/*.ts` files. The manifesto now explicitly states global state management through Zustand. Furthermore, I've clarified the role of AI as an enhancer, not the core driving force. I'm preparing to answer the user's question about how I \"remember,\" emphasizing the Manifesto's role as a context anchor for future prompts and also providing the complete XML structure.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575536167,
+    "doneTimestamp": 1763575555554
+  },
+  {
+    "id": 2,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Es una excelente idea. Como IA, no tengo \"memoria\" a largo plazo entre sesiones a menos que se me proporcione el contexto nuevamente.\n\nCrear un archivo de **Manifiesto del Proyecto** o **Principios de Diseño** es la mejor práctica para asegurar que cualquier ingeniero (o instancia de IA) que toque este código en el futuro mantenga la coherencia visual, arquitectónica y temática.\n\nAquí tienes la creación del archivo `PROJECT_MANIFESTO.md`. Este documento servirá como la \"Estrella del Norte\" para el desarrollo.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575555554,
+    "doneTimestamp": 1763575555606
+  },
+  {
+    "id": 3,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "PROJECT_MANIFESTO.md",
+          "generationType": 1,
+          "isDone": true,
+          "description": "New file defining project principles, design system, and architectural goals."
+        }
+      ]
+    },
+    "createdTimestamp": 1763575556365,
+    "doneTimestamp": 1763575572091
+  },
+  {
+    "id": 4,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Dime que pusiste en el manifestó del proyecto ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575590452
+  },
+  {
+    "id": 5,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Reviewing Manifest Content**\n\nI've just reviewed the project manifesto and it's pretty thorough. I've noted down the main goals, scope, and key deliverables. Now, I need to figure out the most concise way to summarize the main points for the user.\n\n\n**Recall Manifesto Details**\n\nI'm currently focused on the `PROJECT_MANIFESTO.md` file, which I just generated. I'm drilling down into the specifics. I'm focusing on key architectural decisions around Gemini UI, the code principles, and the AI integration approach. My main goal is to create a compelling summary.\n\n\n**Summarizing the Manifesto**\n\nI'm now in the drafting phase. I've broken down the project manifesto into its core components (vision, design, tech, etc.). My current focus is crafting a concise summary for the user, maintaining my \"Senior Frontend Engineer\" persona. I'm highlighting the importance of the document as our \"North Star\" and emphasizing key architectural decisions around visual style, core logic vs. narrative color, and the tech stack.\n\n\n**Refining Key Project Aspects**\n\nI've just refined the project's core elements. The vision remains rooted in astronomical rigor and sci-fi narrative, contrasting micro and macro scales. The Gemini UI design is established: dark theme, glassmorphism, cyan for data, and the Inter/Fira Code fonts. React 19, Three.js, Zustand, and Tailwind form the architectural foundation. Data-driven principles and immutable IDs are critical. IA provides narrative color, not core logic. Finally, folder structure is well-defined.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575590452,
+    "doneTimestamp": 1763575604795
+  },
+  {
+    "id": 6,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "He creado el archivo `PROJECT_MANIFESTO.md` para que actúe como la \"Estrella del Norte\" de nuestro desarrollo. Aquí tienes un resumen de los puntos clave que he establecido:\n\n### 1. Visión del Proyecto\nEl objetivo es construir una herramienta de generación procedural de **\"Clase Mundial\"**.\n*   **Filosofía:** Combinar rigor astronómico simplificado con una narrativa de ciencia ficción rica.\n*   **Escala:** Debemos soportar desde la vista macro (cúmulos de galaxias) hasta la micro (superficies planetarias).\n*   **Coherencia:** Todo está interconectado (la estrella define al planeta, el planeta al bioma, el bioma a la fauna).\n\n### 2. Sistema de Diseño (The \"Gemini UI\")\nHe definido un estilo visual estricto para mantener la estética de \"consola de nave espacial avanzada\":\n*   **Paleta:** Fondos oscuros (`space-dark`), superficies de cristal (`backdrop-blur`), acentos en **Cian** (`accent-cyan`) para datos y **Ámbar** para alertas.\n*   **Tipografía:** `Inter` para la interfaz general y `Fira Code` para datos numéricos y coordenadas.\n*   **Sensación:** Feedback inmediato al pasar el mouse y transiciones suaves.\n\n### 3. Arquitectura Técnica\n*   **Stack:** React 19, Three.js, Zustand (estado global) y Tailwind CSS.\n*   **Principio Data-Driven:** La lógica del juego reside en archivos estáticos en `/data`. No hardcodeamos reglas mágicas en los componentes.\n*   **Determinismo:** Los IDs generados (ej: `planet-x7z`) son sagrados. Se usan como \"semilla\" para que la generación procedural (terreno, texturas) sea siempre idéntica para ese objeto.\n\n### 4. El Rol de la IA (Gemini)\nHe dejado claro el límite de la IA para evitar errores de lógica:\n*   **NO** usar IA para matemáticas orbitales o estadísticas críticas.\n*   **SÍ** usar IA para \"Color Narrativo\": Lore, nombres creativos, descripciones sensoriales y reportes de diagnóstico.\n\nEste archivo está ahora en tu estructura de directorios y servirá para que cualquier futura iteración (o cualquier otra IA que trabaje en esto) mantenga la calidad y el rumbo del proyecto.",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575604795,
+    "doneTimestamp": 1763575604850
+  },
+  {
+    "id": 7,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Pásamelo para que lo pueda copiar y pegar ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575685120
+  },
+  {
+    "id": 8,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Revising the Manifesto**\n\nI've been meticulously reviewing the requested format for the `PROJECT_MANIFESTO.md` file. The user's directive is clear: provide a readily copy-pastable manifesto reflecting the project's structure. I'm focusing on ensuring it's comprehensive yet concise, capturing the essence of the project. I'm now crafting the final version.\n\n\n**Refining the Structure**\n\nThe user's preference now is to include the XML block containing the manifesto's content directly. However, the user also provided an explicit file list where the `PROJECT_MANIFESTO.md` is notably absent. My understanding is that the file is intended to be generated within the project's physical structure, aligning with the conceptual manifesto outlined earlier. I'm focusing on crafting the final version for the file. The plan is to output the file in XML, so that the contents can be quickly inserted into the user's codebase.\n\n\n**Creating XML Block**\n\nI'm now generating the XML block, ensuring it adheres to the user's specific format. I'm taking the already-provided `PROJECT_MANIFESTO.md` content and structuring it according to the requested XML schema. I'm focusing on ensuring its seamless integration into the codebase. I'll need to double-check the file structure to avoid mismatches.\n\n\n**Acknowledging the Context**\n\nIt seems the `PROJECT_MANIFESTO.md` file is already present. However, the user now wants the XML block for easy copy-pasting. The user previously asked for the contents, then supplied the file. I'm inferring the user is now simulating applying the generated content. So I am now generating the XML block, based on the file contents they provided, as requested in their latest prompt.\n\n\n**Validating Manifesto Data**\n\nI'm now generating the XML block based on the provided existing `PROJECT_MANIFESTO.md` content, ensuring content integrity and accuracy. My priority is reflecting the state of the content, satisfying the user's explicit request for a copy-paste-ready XML block, without generating a potentially out-of-date or inaccurate version. I'm focusing on providing the exact, ready-to-use output, maintaining the manifesto's current state.\n\n\n**Reconciling Contradictions**\n\nIt seems the user's initial request and their later action of including the actual file content might be at odds. They want the XML block, and now the existing `PROJECT_MANIFESTO.md` file *is* available. To be sure, I'll need to double check the user's explicit ask. If they want the XML block *for* the existing file, I can generate that. I need to clarify if they'd like me to output the XML block *again*, despite the file's recent inclusion, or if there's a different need based on the contradiction. I am preparing to generate the XML block based on the included content if that's the intention, and I'll clarify based on the prompt's context.\n\n\n**Ensuring Manifesto Integrity**\n\nI'm now generating the `PROJECT_MANIFESTO.md` file, which includes all content provided in the input, ensuring 1:1 content replication. I'm focusing on \"restoring\" or confirming the file's existence based on the best practices I know. I'll need to keep the content and structure as requested. I'm prioritizing accuracy in replicating the original text, effectively treating this as an important part of project setup.\n\n\n**Generating Concise Summary**\n\nI'm now integrating the existing `PROJECT_MANIFESTO.md` content and formatting it according to the specified XML schema. I'm prioritizing accuracy and efficiency, focusing on creating a copy-paste-ready XML block that reflects the provided content and integrates seamlessly with the codebase. The emphasis is now on delivering the final XML output, ensuring it meets the user's immediate needs.\n\n\n**Implementing Color Palette**\n\nI'm now integrating the provided color palette into the design system. I'm focusing on defining the secondary accent color, text styles for various elements, and incorporating the typography guidelines, including the preferred font choices for UI and specific data display. I'll need to consider how these elements come together as I consider the next steps.\n\n\n**Incorporating AI Wisely**\n\nI'm now integrating the Google Gemini AI, focusing on its role as the \"narrative color\" provider. My priority is to enhance the game's storytelling, *not* to use AI for core game mechanics. I'm focusing on ensuring it adds richness without compromising the integrity of game logic. I'm actively determining the best points for this integration to occur.\n\n\n**Analyzing Integration Scope**\n\nI'm now analyzing the scope of AI integration, focusing on leveraging it for flavor descriptions (lore), complex data analysis, and creative name generation within a structured JSON format. I'm focusing on ensuring data reliability and seamless frontend usability with strict JSON schemas. I'll need to consider performance impacts of the data processing.\n\n\n**Analyzing XML Integration**\n\nI'm now integrating the XML block into the user's project, based on the `PROJECT_MANIFESTO.md` file. I'm focusing on ensuring its syntax is correct, checking for any potential errors and making sure it integrates seamlessly. The content is now ready, and I'm assessing the best method to output it as requested, ensuring the focus is still the XML output. I'm prioritizing minimal friction for the user during integration.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575685120,
+    "doneTimestamp": 1763575716676
+  },
+  {
+    "id": 9,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Claro que sí. Aquí tienes el archivo `PROJECT_MANIFESTO.md` listo para ser incluido en tu proyecto. Este archivo define la visión, el sistema de diseño (Gemini UI) y la arquitectura técnica para asegurar que mantengamos el rumbo en futuras iteraciones.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575716676,
+    "doneTimestamp": 1763575716728
+  },
+  {
+    "id": 10,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "PROJECT_MANIFESTO.md",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Creation of the project manifesto to define design principles, architecture, and objectives."
+        }
+      ]
+    },
+    "createdTimestamp": 1763575716729,
+    "doneTimestamp": 1763575724181
+  },
+  {
+    "id": 11,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "En la interfaz había un botón para descargar una documentación, haz que ahora descargue este archivo, a y cámbialo a un formato más fácil de leer que el md",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575771436
+  },
+  {
+    "id": 12,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Evaluating the Change**\n\nI've been analyzing the request, focusing on the goal: updating the download button to point towards the new `PROJECT_README.md` file. The target is clear - redirect the download from the previous file to the `PROJECT_README.md`. I am also working on how to incorporate these changes within the existing interface.\n\n\n**Rethinking the Format**\n\nI've been reconsidering the desired format change. Generating a PDF client-side feels overly complicated and could slow things down. A clean HTML file would preserve formatting and render natively, offering a good compromise between \"easy-to-read\" and lightweight. I will be looking to get access to the content of the manifesto to build the HTML, using `WorkbenchHeader.tsx` as a reference.\n\n\n**Refining the HTML**\n\nI'm now fully immersed in building the HTML. I'm focusing on the structural elements and styling. The HTML structure is coming together as: `<html><head><style>...</style></head><body>...content...</body></html>`. I'm starting to visualize the styling - dark mode, a readable sans-serif font, and cyan accents for headers to match the Gemini UI. I will populate it with the manifesto text. I will be looking at how to modify the button's `onClick` handler and replace the existing download behavior.\n\n\n**Adapting the Handler**\n\nI'm now adapting the existing `handleDownloadTemplates` function to manage the manifesto download. I will generate a `Blob` containing the HTML, ensuring a direct download of the desired documentation, as opposed to fetching an external file. This approach is more streamlined and directly addresses the prompt.\n\n\n**Crafting the Download Logic**\n\nI've been working on the specific code changes. I've designed an HTML structure incorporating a dark-mode theme and matching the Galaxy UI's styling. I will be replacing the current download logic in `WorkbenchHeader.tsx` with a new version. This new handler will create and download an HTML `Blob` containing the rendered manifesto. The code is ready for integration, using the `handleDownloadTemplates` function as a foundation.\n\n\n**Completing the Download**\n\nI've finalized the download logic. I'm building an HTML `Blob` for direct download as \"Galaxy_Workbench_Manifesto.html\". It's a clean HTML file that maintains formatting and readability. I've updated the button to download the HTML. I'm focusing now on mapping Markdown to HTML. I'm going to put the logic for doing so inside the `WorkbenchHeader.tsx` file for now, even though that's not ideal, it works for the requirements. I've switched the text on the button to be more descriptive.\n\n\n**Incorporating Manifesto Data**\n\nNow I'm focusing on the actual content to embed in the HTML. I'm taking the previous turn's structure and incorporating the manifesto text. I'll refine `handleDownloadManifesto`, adding the necessary content to the HTML string. The structure is set, now I'm building it with the actual manifesto data.\n\n\n**Styling the Display**\n\nI'm now fully immersed in styling the HTML. I'm focusing on the structural elements and styling.  The visual approach will be: a dark mode with a readable sans-serif font, and cyan accents for headers to match the Gemini UI, and a container element.  I've added specific CSS rules for list items, bold text, code blocks, containers, and footers. These ensure the manifesto is visually appealing and consistent with the Gemini design language. I've focused on styling the manifesto now.\n\n\n**Enhancing the Display**\n\nI'm now integrating the additional manifesto data and refining the HTML. I'm focusing on incorporating the specifics from the provided bullet points into the HTML structure. I'm working to make sure the \"Gemini UI\" system's design elements are effectively translated into the HTML display. The goal is a visually appealing and informative presentation, using the provided information as a foundation.\n\n\n**Implementing Manifesto Display**\n\nI'm now integrating the final manifesto content and CSS refinements for the HTML. I've populated the HTML structure with the provided details, including the key bullet points on design and architecture. I will finish by focusing on a dark mode with a readable sans-serif font, and cyan accents for headers to match the Gemini UI, and a container element.\n\n\n**Confirming the Download**\n\nI'm now fully confident in the download logic. I have reviewed the code to ensure the `Blob` is generated correctly. The HTML content, styling, and file naming are all finalized. The button action is now to initiate the download, triggering the logic to generate a URL, create a download link, and trigger the user's browser download. This ensures a smooth and reliable user experience for accessing the Galaxy Workbench Manifesto.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575771436,
+    "doneTimestamp": 1763575801531
+  },
+  {
+    "id": 13,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Para cumplir con tu solicitud, haré que el botón que anteriormente descargaba las plantillas JSON ahora genere y descargue un archivo **HTML con estilos**, que contiene el Manifiesto del Proyecto.\n\nEl formato HTML es mucho más fácil de leer que un Markdown o un JSON, ya que se puede abrir directamente en el navegador y mantendrá el estilo visual \"Gemini UI\" (fondo oscuro, texto claro, acentos cian) que definimos en los principios.\n\nAquí tienes los cambios:\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763575801531,
+    "doneTimestamp": 1763575801675
+  },
+  {
+    "id": 14,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "components/layout/WorkbenchHeader.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Replaced handleDownloadTemplates with handleDownloadManifesto to generate a styled HTML file of the project principles."
+        }
+      ]
+    },
+    "createdTimestamp": 1763575801780,
+    "doneTimestamp": 1763575830036
+  },
+  {
+    "id": 15,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Dante, tu proyecto ya no es un “juego espacial”. Es una arquitectura completa de simulación interestelar, con capas de narrativa, biología procedural, ecosistemas reactivos, combate espacial, progresión cultural y un parásito consciente como eje diegético de toda la interfaz.\n\nEl Galaxy Workbench Manifesto que generaste está bonito, pero está a años luz de la complejidad real de tu visión. Sirve de “landing page” estética, pero no de brújula para las IA que participan en el desarrollo.\n\nAcá tienes una versión reescrita y ampliada, un Manifiesto Maestro, pensado para que cualquier IA entienda con precisión qué estás construyendo, cuál es su profundidad, cómo se relacionan las partes y qué límites deben respetar.\n\nTe lo dejo en un solo bloque, listo para reemplazar por completo la versión actual.\n\n\n---\n\nGALAXY WORKBENCH: MANIFIESTO MAESTRO DEL PROYECTO ODYSSEY\n\nPropósito del documento:\nEste manifiesto establece la visión total, los principios rectores, las capas de diseño, las tecnologías involucradas y el papel de la IA en el desarrollo del videojuego Odyssey. Cualquier IA usada para generar contenido, datos o código debe adherirse estrictamente a este documento.\n\n\n---\n\n1. Visión General del Proyecto\n\nOdyssey es un simulador de galaxias vivas, jugado desde la perspectiva de un parásito consciente que controla cuerpos alienígenas. El proyecto combina:\n\n• Ciencia astronómica simplificada\n• Ecosistemas planetarios reactivos y terraformables\n• Fauna modular con fisiología coherente\n• Exploración en múltiples escalas (galaxia → sistema → planeta → bioma → criatura)\n• Combate terrestre, orbital y espacial\n• Tripulaciones con narrativa emergente\n• Tecnología basada en cristales exóticos\n• Construcción modular en naves, bases y equipamiento\n\nTodo ello en un universo procedural consistente, determinado por semillas.\n\nLa filosofía central del proyecto:\n\nCada nivel del cosmos debe ser legible, interpretable y profundo. Nada se genera “porque sí”; cada resultado proviene de una cadena lógica basada en física simplificada + biología procedural + narrativa ecosistémica.\n\n\n---\n\n2. Arquitectura de Escalas “Micro ↔ Macro”\n\nOdyssey opera como un continuo:\n\nEscala 1: Galaxia\n\n• Distribución procedural de estrellas con “sabores estelares”.\n• Rutas, facciones, comercio y eventos globales.\n• Persistencia total.\n\nEscala 2: Sistemas Estelares\n\n• Tipos de estrellas, edades, luminosidad y espectros visuales personalizados.\n• Órbitas, zonas habitables y composición de planetas.\n\nEscala 3: Planetas\n\n• Geología voxel modificable.\n• Mapas RGB de calor/humedad/presión que gobiernan: clima, biomas y fauna.\n• Climatología realista: tormentas, estaciones, procesos atmosféricos.\n\nEscala 4: Biomas\n\n• Flora, fauna, minerales.\n• Reglas ecológicas definidas por capas de datos.\n• Reacción a acciones del jugador: caza, quemas, sobreexplotación, asentamientos.\n\nEscala 5: Criaturas y entidades vivas\n\n• Sistema modular ECS.\n• Cuerpos, comportamiento, dieta, stats, drops.\n• Adaptación a interacción del jugador (depredador, pacifista, parasitario).\n\n\n---\n\n3. Mecánicas Nucleares del Juego\n\n3.1. El Parásito (UI viviente y avatar del jugador)\n\nEl jugador no es el organismo, es el parásito.\nFunciones:\n\n• Toma de cuerpos alienígenas como avatares.\n• Evolución en habilidades y mejoras de HUD.\n• Modulación de la interfaz (justificación diegética).\n• Análisis biológico, climático, social y mecánico del entorno.\n\n3.2. Especies jugables\n\nCada especie es una “clase jugable” de otro planeta.\n\nEjemplos confirmados: • Caracoles solares (verde)\n• Pangolines del desierto (rojo)\n• Especie voladora u oceánica (azul)\n\nCada una incluye: • Nave carguera única\n• Fragata con estilo de combate propio\n• Tres naves civiles\n• Habilidades activas/pasivas\n• Vulnerabilidades ambientales\n• Estética visual y sonora única\n\n3.3. Supervivencia planetaria\n\n• Clima hostil reactivo.\n• Construcción modular.\n• Progresión desde supervivencia → industrialización ligera → vuelo atmosférico → regreso al espacio.\n\n3.4. Navegación espacial\n\n• Combate entre fragatas y corbetas.\n• Uso de cristales como munición con efectos (gravedad, electricidad, hielo, ignición).\n• AI de flotas.\n• Eventos espaciales emergentes (anomalías, piratas, ruinas).\n\n3.5. Economía y crafting\n\n• Cadena económica basada en cristales, minerales y biotecnología.\n• Arcos multielemento.\n• Robots, torretas, naves modulares.\n• Asentamientos con cultura y reputación.\n\n\n---\n\n4. El Sistema de Cristales\n\nUna de las tecnologías centrales del progreso del jugador.\n\n• Tipos elementales: fuego, hielo, gravedad, eléctrico.\n• Pureza, nivel y resonancia alteran armas, naves, herramientas y estructuras.\n• Combinaciones avanzadas permiten efectos únicos en combate o terraformación.\n\n\n---\n\n5. Ecosistemas Reactivos y Modularidad Biológica\n\n5.1. Fauna Modular (ECS)\n\nCada criatura:\n\n• Se define como una entidad ECS.\n• Tiene componentes de cuerpo, dieta, comportamiento, ataques, drop, locomoción.\n• Posee “arquetipos base” que generan variaciones procedurales.\n• Reacciona al estilo de juego.\n\n5.2. Flora y Minerales\n\n• Tres categorías base para plantas (árbol, arbusto, hierba).\n• Tres tipos base de roca.\n• Se convertirán en entidades intercambiables durante la generación procedural.\n\n5.3. Ecosistemas dinámicos\n\n• Eventos climáticos que alteran la vida.\n• Propagación de incendios.\n• Colapso de cadenas tróficas si el jugador interviene demasiado.\n• Progreso visible y persistente.\n\n\n---\n\n6. Tecnología, Motor y Sistemas\n\n6.1. Herramientas base\n\n• Unreal Engine (VoxelPlugin, cubemap planetario, shaders atmosféricos).\n• Chunks y cascarones planetarios.\n• Bases de datos JSON/SQLite para entidades generadas.\n• Galaxy Workbench: visualizador/constructor procedural.\n\n6.2. Determinismo\n\nTodo lo que se genera depende de una semilla.\nUna misma semilla genera exactamente el mismo resultado en todas las escalas.\n\n6.3. IA dentro del desarrollo\n\nLa IA debe:\n\n1. Generar datos, no reglas.\n\n\n2. No inventar cálculos orbitales complejos ni fórmulas físicas profundas.\n\n\n3. Crear lore, narrativa, estilos visuales, nombres, descripciones.\n\n\n4. Autocompletar patrones de diseño basados en plantillas JSON y ECS.\n\n\n5. Ayudar a mantener coherencia entre escalas.\n\n\n\nLa IA no debe inventar arquitectura técnica sin indicación explícita.\n\n\n---\n\n7. Estética y Diseño\n\n7.1. Estética visual\n\n• Ciencia ficción orgánica liviana.\n• Influencias de fauna marina y biotecnología.\n• Materiales suaves, membranosos, luminosidad interna.\n\n7.2. Interfaz (UI del parásito)\n\n• Animada, viva y reactiva.\n• Capas semitransparentes, acentos bioluminiscentes.\n• Feedback visual basado en estados del huésped.\n\n7.3. Sonido\n\n• Ambientes densos y alienígenas.\n• Música por especie, bioma y situación.\n\n\n---\n\n8. Roadmap del proyecto\n\nVertical Slice\n\n• Planeta tropical\n• Caracol Solar (verde)\n• Parásito v1\n• Vuelo básico\n• Clima\n• Fauna modular básica\n\nDía 1\n\n• Tres especies jugables\n• Tres biomas completos\n• Sistema de clima total\n• Fragmento sólido del sistema de estrellas\n• Combate espacial básico\n• Cristales y economía inicial\n\nExpansiones\n\n• Más especies\n• Multijugador asimétrico\n• Eventos globales\n• Planetas colmena\n• Ecosistemas planetarios avanzados\n• Facciones con política real\n\n\n---\n\n9. Principios que toda IA debe respetar\n\n1. El universo debe ser coherente, biológicamente plausible y narrativamente legible.\n\n\n2. Nada de magia negra: siempre explica el “por qué” del diseño generado.\n\n\n3. Nunca romper el determinismo del sistema procedural.\n\n\n4. Mantener jerarquías claras (galaxia → sistema → planeta → bioma → entidad).\n\n\n5. No sobreescribir sistemas centrales a menos que el usuario lo pida explícitamente.\n\n\n6. Priorizar modularidad: todo debe poder escalarse.\n\n\n\n\n---\n\n¿Qué puedes hacer ahora con este documento?\n\nEste manifiesto sirve como la “Biblia del Proyecto Odyssey”, un marco lo suficientemente grande para que cualquier IA:\n\n• entienda el tono,\n• mantenga la coherencia,\n• genere datos correctos,\n• respete la arquitectura del proyecto,\n• y no “simplifique” tu visión.\n\nSi quieres, puedo convertir esta versión en un HTML estilizado como el Workbench Manifesto, o en un PDF, o incluso en un GDD condensado para IA de generación de contenido.\n\nEste es el punto de partida perfecto para un equipo híbrido humano–IA.\n\nUna IA con mejor entendimiento de mi proyecto hizo este manifestó, actualiza el que hay internamente, omite las cosas que están más definidas en el sistema real y también omite el roadmap qué da al final, junto a esto quería sumar qué mi visión es de una ciencia ficción más soft qué admite elementos de fantasía, mientras no choquen con los de ciencia ficción, similar a lo que hace star wars o dragón Ball al mezclar estos dos géneros, también que como juego el resultado final es tener un universo tipo sandbox con voxels como minecraft, pero en vez de generar un mundo plano, genera galaxias enteras ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763576357135
+  },
+  {
+    "id": 16,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Evaluating the Task**\n\nI'm currently dissecting the task. The core is replacing the existing manifesto with a new one.  I'm focusing on the technical steps, specifically how the changes affect both the markdown and the React component. I am concerned with the constraints of this change.\n\n\n**Defining the Manifesto's Scope**\n\nI'm now refining the scope of the manifesto.  I've decided to prioritize the user's detailed text over the old one.  I'm omitting any implementation specifics related to the Unreal Engine, focusing instead on the larger vision of a soft sci-fi sandbox universe built with voxels. The roadmap section is also being scrapped for now. I've begun to define the title: \"GALAXY WORKBENCH: MANIFIESTO MAESTRO DEL PROYECTO ODYSSEY\".\n\n\n**Adjusting Technical Framing**\n\nI'm making a crucial adjustment to the \"Tech/AI\" section, which is section 6. I need to clarify the relationship between the *Project Odyssey* manifesto and the *Workbench* codebase. The user text includes Unreal Engine references, but this repo is React/Three.js. I'm strategically shifting the language to discuss the architecture, applicable to either, the design tool and the final game logic. I will retain \"Galaxy Workbench\" as the name of the procedural constructor tool. Determinism and AI roles are still included. The rest of the sections seem good so far.\n\n\n**Prioritizing Content & Code**\n\nI'm focused on finalizing the new markdown content and updating the `WorkbenchHeader` component. The `PROJECT_MANIFESTO.md` file will be entirely rewritten to incorporate the refined vision. Specifically, the \"Soft Sci-Fi\" and \"Voxel\" sections have been integrated into sections 1 and 7, respectively. The technical adjustments involve updating the hardcoded HTML string within the `handleDownloadManifesto` function so the downloaded HTML matches the updated markdown.\n\n\n**Polishing for Consistency**\n\nI'm now integrating the new markdown content and the changes to the React component, specifically `handleDownloadManifesto`. The markdown structure has been translated to valid HTML, updating the `content` string. I'm focusing on ensuring consistency between the downloaded HTML and the updated markdown content. I've successfully incorporated \"Soft Sci-Fi\" and \"Voxel\" themes.  I'm also paying close attention to avoiding Unreal Engine specifics that don't apply, prioritizing the Data/Logic architecture.\n\n\n**Completing Content & HTML**\n\nI've just finished the XML structure. I've drafted the markdown content with the new \"Soft Sci-Fi with Fantasy\" section, ensuring the fantasy elements have a pseudo-scientific basis. I'm carefully constructing the HTML output to mirror the markdown structure, paying attention to escape any problematic characters in `WorkbenchHeader.tsx`.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763576357135,
+    "doneTimestamp": 1763576380091
+  },
+  {
+    "id": 17,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Entendido. He reescrito el manifiesto integrando la visión profunda del \"Proyecto Odyssey\", la mecánica del Parásito, la arquitectura de escalas y las reglas de la IA.\n\nHe realizado las siguientes adaptaciones según tus instrucciones:\n1.  **Integración Soft Sci-Fi/Fantasía:** He añadido explícitamente la filosofía de diseño tipo *Star Wars / Dragon Ball* (tecnología + misticismo/biología exótica) en la visión y estética.\n2.  **Enfoque Voxel/Sandbox:** He definido el objetivo final como un universo de voxels esféricos y galaxias completas, diferenciándolo de los mundos planos tradicionales.\n3.  **Limpieza Técnica:** He eliminado referencias específicas a motores externos (como Unreal) para que el manifiesto sirva a *este* Workbench (React/Three.js) como la herramienta de diseño de datos agnóstica, y he eliminado el Roadmap como pediste.\n\nAquí tienes los cambios para el archivo Markdown y para el generador de HTML en la interfaz.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763576380092,
+    "doneTimestamp": 1763576380144
+  },
+  {
+    "id": 18,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "PROJECT_MANIFESTO.md",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Complete rewrite of the manifesto to reflect Project Odyssey's Master Vision, including Soft Sci-Fi elements, Voxel architecture, and the Parasite mechanic."
+        },
+        {
+          "path": "components/layout/WorkbenchHeader.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Updated the HTML download content to match the new Master Manifesto with Soft Sci-Fi and Voxel definitions."
+        }
+      ]
+    },
+    "createdTimestamp": 1763576382027,
+    "doneTimestamp": 1763576396625
+  }
+]

@@ -1,4 +1,3 @@
-
 /**
  * @file starGenerator.ts
  * @description This service is the core of the procedural generation engine.
@@ -17,6 +16,12 @@ import { TABLA_ESTRELLAS, CONFIG_CUERPO_CENTRAL, CONFIG_ORBITA } from '../consta
 import { getAllBiomes, getAllFauna, getAllPlants, getAllMinerals } from './dataService';
 import { GREEK_LETTERS, CONSTELLATION_GENITIVES } from '../constants/starNames';
 import { roundTo, randRange, pick, id, weightedPick, randInt } from '../utils/helpers';
+
+// --- CONSTANTES FISICAS ---
+// 1 Radio Solar aprox = 0.00465 UA. 
+// Usamos esto para asegurar que los planetas no nazcan dentro de la estrella.
+const RADIO_SOLAR_A_UA = 0.00465; 
+const MARGEN_SEGURIDAD_ESTELAR = 1.5; // Los planetas deben estar al menos a 1.5x el radio de la estrella
 
 // --- HELPERS DE GENERACIÓN ---
 
@@ -169,16 +174,15 @@ const generarEcosistema = async (biome: Bioma): Promise<Ecosistema> => {
 const generarCargaUtilLuna = (todosBiomas: Bioma[]): CargaUtilLuna => {
     const tipoLuna = pick<'rocosa' | 'helada' | 'volcanica'>(['rocosa', 'helada', 'volcanica']);
     const biomasInospitos = todosBiomas.filter(b => b.categoria === 'INOSPITO');
-    if (biomasInospitos.length === 0) {
-        throw new Error("No biomes of category 'INOSPITO' found to generate a moon.");
-    }
-    const biomaLuna = pick(biomasInospitos);
+    
+    // Fallback if no specific inhospitable biomes found
+    const biomaLuna = biomasInospitos.length > 0 ? pick(biomasInospitos) : pick(todosBiomas);
     
     return {
         nombre: `Luna ${tipoLuna.charAt(0).toUpperCase() + tipoLuna.slice(1)}`,
         descripcion: `Una luna ${tipoLuna} con un bioma inhóspito.`,
         tipo: tipoLuna,
-        biomeId: biomaLuna.id,
+        biomeId: biomaLuna ? biomaLuna.id : 'unknown',
     };
 };
 
@@ -292,20 +296,23 @@ const generarCargaUtilPlaneta = async (cuerpoCentral: Estrella | CuerpoEspecial,
         const categoriasPosibles = categoriasPorTipoPlaneta[tipoPlaneta] || [];
         const biomasDisponibles = TODOS_BIOMAS.filter(b => categoriasPosibles.includes(b.categoria));
         
-        const numBiomas = randInt(1, Math.min(3, biomasDisponibles.length));
+        if (biomasDisponibles.length > 0) {
+             const numBiomas = randInt(1, Math.min(3, biomasDisponibles.length));
         
-        const biomasSeleccionados = new Set<Bioma>();
-        const biomasDisponiblesCopia = [...biomasDisponibles];
-  
-        while (biomasSeleccionados.size < numBiomas && biomasDisponiblesCopia.length > 0) {
-            const biomaElegido = pick(biomasDisponiblesCopia);
-            biomasSeleccionados.add(biomaElegido);
-            const index = biomasDisponiblesCopia.indexOf(biomaElegido);
-            if (index > -1) {
-              biomasDisponiblesCopia.splice(index, 1);
-            }
+             const biomasSeleccionados = new Set<Bioma>();
+             const biomasDisponiblesCopia = [...biomasDisponibles];
+       
+             while (biomasSeleccionados.size < numBiomas && biomasDisponiblesCopia.length > 0) {
+                 const biomaElegido = pick(biomasDisponiblesCopia);
+                 biomasSeleccionados.add(biomaElegido);
+                 const index = biomasDisponiblesCopia.indexOf(biomaElegido);
+                 if (index > -1) {
+                   biomasDisponiblesCopia.splice(index, 1);
+                 }
+             }
+             biomas.push(...Array.from(biomasSeleccionados));
         }
-        biomas.push(...Array.from(biomasSeleccionados));
+
         // Assign coverage percentages for each selected biome.
         if (biomas.length > 0) {
             let remainingCoverage = 1.0;
@@ -341,14 +348,20 @@ const generarCargaUtilPlaneta = async (cuerpoCentral: Estrella | CuerpoEspecial,
         ].filter(c => c.peso > 0);
 
         const numCristales = randInt(1, 3);
-        for (let i = 0; i < numCristales && pesosCristales.length > 0; i++) {
-            const tipoCristalElegido = weightedPick(pesosCristales);
-            cristalesPlaneta.push({
-                tipo: tipoCristalElegido.tipo as TipoCristal,
-                pureza: roundTo(randRange(0.2, 0.9), 2),
-            });
-            const index = pesosCristales.findIndex(c => c.tipo === tipoCristalElegido.tipo);
-            if (index > -1) pesosCristales.splice(index, 1);
+        
+        // SAFETY CHECK: Only pick if there are crystals to pick from
+        if (pesosCristales.length > 0) {
+            for (let i = 0; i < numCristales && pesosCristales.length > 0; i++) {
+                const tipoCristalElegido = weightedPick(pesosCristales);
+                if (tipoCristalElegido && tipoCristalElegido.tipo) {
+                     cristalesPlaneta.push({
+                        tipo: tipoCristalElegido.tipo as TipoCristal,
+                        pureza: roundTo(randRange(0.2, 0.9), 2),
+                    });
+                    const index = pesosCristales.findIndex(c => c.tipo === tipoCristalElegido.tipo);
+                    if (index > -1) pesosCristales.splice(index, 1);
+                }
+            }
         }
     } else {
         cristalesPlaneta = null;
@@ -477,10 +490,26 @@ const generarOrbitas = async (cuerpoCentral: Estrella | CuerpoEspecial): Promise
     }
     
     if (numOrbitas === 0) return [];
+    
+    // Calcular distancia mínima segura basada en el radio físico de la estrella
+    let radioSeguridadAU = 0.05; // Default para cuerpos no estelares
+    
+    // ADJUSTMENT: Increase orbit distance for Black Holes to clear visual model
+    if (cuerpoCentral.tipo === 'AGUJERO_NEGRO') {
+         radioSeguridadAU = 1.5; // 1.5 AU minimum to clear the accretion disk
+    } else if (cuerpoCentral.tipo === 'ESTRELLA') {
+         radioSeguridadAU = cuerpoCentral.radioSolar * RADIO_SOLAR_A_UA * MARGEN_SEGURIDAD_ESTELAR;
+    }
 
     const esEstrellaJoven = cuerpoCentral.tipo === 'ESTRELLA' && cuerpoCentral.edadEstelar === 'joven';
     const orbitas: Orbita[] = [];
     const config = CONFIG_ORBITA.paramsPorCuerpo[cuerpoCentral.tipo] || CONFIG_ORBITA.paramsPorCuerpo.ESTRELLA;
+    
+    // Override config for Black Holes specifically to push orbits out
+    if(cuerpoCentral.tipo === 'AGUJERO_NEGRO') {
+        config.a0_UA = { min: 1.5, max: 2.5 }; 
+    }
+
     let ultimo_a = 0;
 
     for (let i = 0; i < numOrbitas; i++) {
@@ -488,6 +517,10 @@ const generarOrbitas = async (cuerpoCentral: Estrella | CuerpoEspecial): Promise
         // Calculate orbital distance using a Titius-Bode-like progression.
         if (i === 0) {
             a_UA = randRange(config.a0_UA.min, config.a0_UA.max);
+            // Ensure orbit is outside the body's physical/visual radius
+            if (a_UA < radioSeguridadAU) {
+                a_UA = radioSeguridadAU + randRange(0.1, 0.3);
+            }
         } else {
             a_UA = ultimo_a * randRange(config.k_espaciado.min, config.k_espaciado.max);
         }

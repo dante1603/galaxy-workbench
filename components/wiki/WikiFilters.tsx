@@ -15,9 +15,9 @@ const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="12" height="1
 
 interface WikiFiltersProps {
     activeTab: WikiTab;
-    allData: any;
-    filters: any;
-    setters: any;
+    allData: Record<string, Record<string, unknown>[]>;
+    filters: Record<string, string>;
+    setters: Record<string, (val: string) => void>;
     openFilter: string | null;
     setOpenFilter: (key: string | null) => void;
     onOpenCreator: () => void;
@@ -40,24 +40,24 @@ const WikiFilters: React.FC<WikiFiltersProps> = ({
 }) => {
     
     // --- Derived Data for Options ---
-    const animalKingdoms: ReinoAnimal[] = useMemo(() => [...new Set<ReinoAnimal>(allData.allFauna.map((f: any) => f.reino))].sort(), [allData.allFauna]);
-    const diets: Dieta[] = useMemo(() => [...new Set<Dieta>(allData.allFauna.map((f: any) => f.dieta))].sort(), [allData.allFauna]);
+    const animalKingdoms: ReinoAnimal[] = useMemo(() => [...new Set<ReinoAnimal>(allData.allFauna.map((f: { reino: ReinoAnimal }) => f.reino))].sort(), [allData.allFauna]);
+    const diets: Dieta[] = useMemo(() => [...new Set<Dieta>(allData.allFauna.map((f: { dieta: Dieta }) => f.dieta))].sort(), [allData.allFauna]);
     const sizes: TamanoFauna[] = ['diminuto', 'pequeno', 'medio', 'grande', 'muy_grande', 'colosal'];
-    const locomotions: Locomocion[] = useMemo(() => [...new Set<Locomocion>(allData.allFauna.map((f: any) => f.locomocion))].sort(), [allData.allFauna]);
+    const locomotions: Locomocion[] = useMemo(() => [...new Set<Locomocion>(allData.allFauna.map((f: { locomocion: Locomocion }) => f.locomocion))].sort(), [allData.allFauna]);
     
     const crystalTypes: TipoCristal[] = Object.keys(CRYSTAL_COLORS) as TipoCristal[];
-    const biomeCategories: CategoriaBiome[] = useMemo(() => [...new Set<CategoriaBiome>(allData.allBiomes.map((b: any) => b.categoria))].sort(), [allData.allBiomes]);
+    const biomeCategories: CategoriaBiome[] = useMemo(() => [...new Set<CategoriaBiome>(allData.allBiomes.map((b: { categoria: CategoriaBiome }) => b.categoria))].sort(), [allData.allBiomes]);
     const materialOrigins: OrigenMaterial[] = ['vegetal', 'animal', 'mineral'];
     
     // New Derived Data
-    const plantStructures: string[] = useMemo(() => [...new Set<string>(allData.allPlants.map((p: any) => p.estructura))].sort(), [allData.allPlants]);
-    const plantFoliages: string[] = useMemo(() => [...new Set<string>(allData.allPlants.map((p: any) => p.follaje))].sort(), [allData.allPlants]);
-    const mineralRarities: string[] = useMemo(() => [...new Set<string>(allData.allMinerals.map((m: any) => m.rareza))].sort(), [allData.allMinerals]);
-    const materialRarities: string[] = useMemo(() => [...new Set<string>(allData.allMaterials.map((m: any) => m.rareza))].sort(), [allData.allMaterials]);
-    const effectTypes: string[] = useMemo(() => [...new Set<string>(allData.allEffects.map((e: any) => e.tipoEfecto))].sort(), [allData.allEffects]);
-    const weaponTypes: string[] = useMemo(() => [...new Set<string>(allData.allWeapons.map((w: any) => w.tipoArma))].sort(), [allData.allWeapons]);
-    const toolTypes: string[] = useMemo(() => [...new Set<string>(allData.allTools.map((t: any) => t.tipoHerramienta))].sort(), [allData.allTools]);
-    const speciesDiets: string[] = useMemo(() => [...new Set<string>(allData.allSpecies.map((s: any) => s.metabolismo.dieta))].sort(), [allData.allSpecies]);
+    const plantStructures: string[] = useMemo(() => [...new Set<string>(allData.allPlants.map((p: { estructura: string }) => p.estructura))].sort(), [allData.allPlants]);
+    const plantFoliages: string[] = useMemo(() => [...new Set<string>(allData.allPlants.map((p: { follaje: string }) => p.follaje))].sort(), [allData.allPlants]);
+    const mineralRarities: string[] = useMemo(() => [...new Set<string>(allData.allMinerals.map((m: { rareza: string }) => m.rareza))].sort(), [allData.allMinerals]);
+    const materialRarities: string[] = useMemo(() => [...new Set<string>(allData.allMaterials.map((m: { rareza: string }) => m.rareza))].sort(), [allData.allMaterials]);
+    const effectTypes: string[] = useMemo(() => [...new Set<string>(allData.allEffects.map((e: { tipoEfecto: string }) => e.tipoEfecto))].sort(), [allData.allEffects]);
+    const weaponTypes: string[] = useMemo(() => [...new Set<string>(allData.allWeapons.map((w: { tipoArma: string }) => w.tipoArma))].sort(), [allData.allWeapons]);
+    const toolTypes: string[] = useMemo(() => [...new Set<string>(allData.allTools.map((t: { tipoHerramienta: string }) => t.tipoHerramienta))].sort(), [allData.allTools]);
+    const speciesDiets: string[] = useMemo(() => [...new Set<string>(allData.allSpecies.map((s: { metabolismo?: { dieta: string } }) => s.metabolismo?.dieta).filter(Boolean) as string[])].sort(), [allData.allSpecies]);
 
     // --- Helpers ---
     
@@ -138,12 +138,12 @@ const WikiFilters: React.FC<WikiFiltersProps> = ({
             
             {/* Top Bar: Actions & Filter Pills */}
             <div className="flex items-center gap-2 p-2 overflow-x-auto no-scrollbar">
-                {activeTab === 'Fauna' && (
+                {(activeTab === 'Fauna' || activeTab === 'General') && (
                     <>
                         <button 
                             onClick={onOpenCreator} 
                             className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold rounded-md transition-colors text-xs uppercase tracking-wide"
-                            title="Registrar nuevo espécimen"
+                            title={activeTab === 'Fauna' ? "Registrar nuevo espécimen" : "Create new entry"}
                         >
                             <PlusIcon />
                             <span className="hidden sm:inline">Nuevo</span>

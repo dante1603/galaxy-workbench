@@ -6,6 +6,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { GalaxyParams, GalaxyDataBuffers, calculateGalaxyData, generateRandomParams, hexToRgbNormalized } from '../utils/galaxyMath';
+import { saveGalaxySeed } from '../api/galaxy';
+import SavedGalaxiesPanel from './SavedGalaxiesPanel';
 
 interface GalaxyVisualizerProps {
     onStarSelected: (seed: number) => void;
@@ -15,9 +17,11 @@ interface GalaxyVisualizerProps {
 
 // --- ICONS ---
 const DiceIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 8h.01"></path><path d="M8 8h.01"></path><path d="M8 16h.01"></path><path d="M16 16h.01"></path><path d="M12 12h.01"></path></svg>;
-const SettingsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
+const SettingsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
 const ChevronDownIcon = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
 const RocketIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>;
+const SaveIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
+const FolderIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>;
 
 // --- COLOR UTILS ---
 const hslToHex = (h: number, s: number, l: number) => {
@@ -34,11 +38,12 @@ const hslToHex = (h: number, s: number, l: number) => {
 const hexToHSL = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return [0, 100, 50];
-  let r = parseInt(result[1], 16) / 255;
-  let g = parseInt(result[2], 16) / 255;
-  let b = parseInt(result[3], 16) / 255;
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -53,7 +58,7 @@ const hexToHSL = (hex: string) => {
 };
 
 const GalaxyColorPicker: React.FC<{ label: string, value: string, onChange: (val: string) => void }> = ({ label, value, onChange }) => {
-    const [h, s, l] = hexToHSL(value);
+    const [h, , l] = hexToHSL(value);
     
     // We map Lightness from 50 (pure color) to 100 (white) for the slider
     // If the input color is darker than 50% L, we clamp it visually to start at 0.
@@ -117,6 +122,8 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
     const mountRef = useRef<HTMLDivElement>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isSavedGalaxiesOpen, setIsSavedGalaxiesOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [whiteoutOpacity, setWhiteoutOpacity] = useState(1); // Start White for "arrival" effect
     
     // Current Visible Params
@@ -295,12 +302,14 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
         
         // 1. Create Background Dome using ShaderMaterial
         // OPTIMIZATION: Reduced segments from 60x40 to 32x32 for performance
+        // FIX: Adjusted shader to reduce flickering on mobile (lower frequency hash)
+        // and improve "strip" look on PC (smoother gradient steps).
         const domeGeo = new THREE.SphereGeometry(500, 32, 32);
         const domeMat = new THREE.ShaderMaterial({
             uniforms: {
-                spaceColor: { value: new THREE.Color(0x000000) }, // Deep black
-                nebulaColor1: { value: new THREE.Color(0x0f001a) }, // Very dark purple
-                nebulaColor2: { value: new THREE.Color(0x000a1a) }, // Very dark blue
+                spaceColor: { value: new THREE.Color(0x000000) },
+                nebulaColor1: { value: new THREE.Color(0x0f001a) },
+                nebulaColor2: { value: new THREE.Color(0x000a1a) },
             },
             vertexShader: `
                 varying vec3 vWorldPosition;
@@ -316,12 +325,10 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
                 uniform vec3 nebulaColor2;
                 varying vec3 vWorldPosition;
 
-                // Optimized Hash for Background
                 float hash(vec3 p) {
                     return fract(sin(dot(p, vec3(12.9898, 78.233, 148.85))) * 43758.5453);
                 }
 
-                // Simplified 3D Noise (Reduced complexity)
                 float noise(in vec3 x) {
                     vec3 i = floor(x);
                     vec3 f = fract(x);
@@ -335,27 +342,37 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
                 void main() {
                     vec3 dir = normalize(vWorldPosition);
                     
-                    // Offset to center
-                    vec3 noiseCoord = dir + vec3(100.0);
-
-                    // Single octave noise for nebula
-                    float n = noise(noiseCoord * 2.5);
+                    // --- NEBULA CLOUDS ---
+                    // Increased scale slightly to make clouds larger/softer
+                    // Offset to reduce symmetry
+                    vec3 noiseCoord = dir * 1.5 + vec3(100.0); 
+                    float n = noise(noiseCoord);
                     
-                    // Simplified Galactic Band
+                    // --- GALACTIC BAND FIX ---
+                    // Relaxed band calculation: removed sharp 'abs(dir.y)' falloff
+                    // Now it's a wider, softer gradient based on Y
                     float distFromEquator = abs(dir.y);
-                    float bandFactor = smoothstep(0.6, 0.0, distFromEquator);
+                    float bandFactor = smoothstep(0.8, 0.1, distFromEquator); // Wider fade
                     
                     vec3 color = spaceColor;
                     
-                    // Simple Nebula Mix
-                    float nebulaMix = smoothstep(0.35, 0.8, n);
-                    color = mix(color, nebulaColor1, nebulaMix * 0.6);
-                    color = mix(color, nebulaColor2, bandFactor * 0.5);
+                    // Layer 1: General Nebula (Very subtle everywhere)
+                    color = mix(color, nebulaColor1, smoothstep(0.3, 0.7, n) * 0.3);
+                    
+                    // Layer 2: Galactic Band Concentration
+                    // Only apply denser nebula color near the equator
+                    color = mix(color, nebulaColor2, bandFactor * 0.6 * smoothstep(0.4, 0.9, n));
 
-                    // Simple Stars (Thresholding)
-                    float starNoise = hash(floor(dir * 1800.0)); 
-                    if (starNoise > 0.9985) {
-                        color += vec3(0.6 + (starNoise - 0.9985) * 200.0);
+                    // --- STARS FIX ---
+                    // Reduced frequency from 1800.0 to 350.0 to prevent sub-pixel aliasing/flickering on mobile
+                    float starCoord = 350.0; 
+                    float starNoise = hash(floor(dir * starCoord)); 
+                    
+                    // Adjusted threshold for lower frequency (so we don't get too many huge blocks)
+                    if (starNoise > 0.9992) {
+                        // Variation in brightness
+                        float brightness = (starNoise - 0.9992) * 500.0;
+                        color += vec3(brightness);
                     }
                     
                     gl_FragColor = vec4(color, 1.0);
@@ -437,17 +454,17 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
 
         const renderPass = new RenderPass(scene, camera);
         
-        // OPTIMIZATION: Half-resolution bloom buffer
+        // OPTIMIZATION: Quarter-resolution bloom buffer for better performance on desktop
         // This drastically reduces the cost of the bloom blur passes
         const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(currentMount.clientWidth / 2, currentMount.clientHeight / 2), 
+            new THREE.Vector2(currentMount.clientWidth / 4, currentMount.clientHeight / 4), 
             1.5, 0.4, 0.85
         );
         // OPTIMIZATION: Increase threshold to 0.1 to stop background glow
-        // Reduce strength to 1.0 to prevent washed out look
-        bloomPass.threshold = 0.1;
-        bloomPass.strength = 1.0;
-        bloomPass.radius = 0.8;
+        // Reduce strength to 0.8 to prevent washed out look on PC
+        bloomPass.threshold = 0.15;
+        bloomPass.strength = 0.8;
+        bloomPass.radius = 0.6;
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderPass);
@@ -593,9 +610,9 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
             camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-            // Important: Resize composer with half resolution for bloom optimization
+            // Important: Resize composer with quarter resolution for bloom optimization
             composer.setSize(currentMount.clientWidth, currentMount.clientHeight);
-            bloomPass.resolution.set(currentMount.clientWidth / 2, currentMount.clientHeight / 2);
+            bloomPass.resolution.set(currentMount.clientWidth / 4, currentMount.clientHeight / 4);
         };
         window.addEventListener('resize', handleResize);
 
@@ -612,10 +629,35 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
             domeMat.dispose();
             composer.dispose();
         };
-    }, [onStarSelected, prepareNextGalaxy, onGalaxyHyperjump]); 
+    }, [onStarSelected, prepareNextGalaxy, onGalaxyHyperjump, params]); 
 
     const handleRandomClick = () => {
         if (jumpToRandomRef.current) jumpToRandomRef.current();
+    };
+
+    const handleSaveGalaxy = async () => {
+        const name = window.prompt('Enter a name for this galaxy configuration:');
+        if (!name) return;
+
+        setIsSaving(true);
+        try {
+            await saveGalaxySeed({
+                name,
+                seed: Math.floor(Math.random() * 1000000), // Random seed for the galaxy itself
+                config: params,
+            });
+            alert('Galaxy saved successfully!');
+        } catch (error) {
+            console.error('Failed to save galaxy:', error);
+            alert('Failed to save galaxy. Make sure you are logged in.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleLoadGalaxy = (loadedParams: GalaxyParams) => {
+        setParams(loadedParams);
+        setIsSavedGalaxiesOpen(false);
     };
 
     return (
@@ -638,6 +680,18 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
             <div className={`absolute top-32 right-4 flex flex-col items-end gap-3 transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                  <div className="flex flex-col bg-slate-900/80 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-lg p-1 z-40">
                     <button 
+                        onClick={() => {
+                            setIsSavedGalaxiesOpen(!isSavedGalaxiesOpen);
+                            setIsSettingsOpen(false);
+                        }}
+                        className={`p-2 rounded-md hover:bg-white/10 transition-colors ${isSavedGalaxiesOpen ? 'text-accent-cyan' : 'text-slate-400 hover:text-white'}`}
+                        title="Load Saved Galaxies"
+                        disabled={isTransitioning}
+                    >
+                        <FolderIcon />
+                    </button>
+                    <div className="h-px bg-slate-700/50 mx-2"></div>
+                    <button 
                         onClick={handleRandomize} 
                         className="p-2 rounded-md hover:bg-white/10 text-slate-400 hover:text-emerald-400 transition-colors"
                         title="Aleatorizar Parámetros de Galaxia"
@@ -647,13 +701,23 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
                     </button>
                     <div className="h-px bg-slate-700/50 mx-2"></div>
                     <button
-                         onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                         onClick={() => {
+                             setIsSettingsOpen(!isSettingsOpen);
+                             setIsSavedGalaxiesOpen(false);
+                         }}
                          className={`p-2 rounded-md hover:bg-white/10 transition-colors ${isSettingsOpen ? 'text-accent-cyan' : 'text-slate-400 hover:text-white'}`}
                          title="Configuración de Galaxia"
                     >
                         <ChevronDownIcon className={`transform transition-transform duration-200 ${isSettingsOpen ? 'rotate-180' : ''}`} />
                     </button>
                  </div>
+
+                {isSavedGalaxiesOpen && (
+                    <SavedGalaxiesPanel 
+                        onSelectGalaxy={handleLoadGalaxy} 
+                        onClose={() => setIsSavedGalaxiesOpen(false)} 
+                    />
+                )}
 
                 {/* Settings Panel - Increased Z-Index to avoid overlap */}
                 {isSettingsOpen && (
@@ -733,6 +797,17 @@ const GalaxyVisualizer: React.FC<GalaxyVisualizerProps> = ({ onStarSelected, onG
                                     value={params.colorArm} 
                                     onChange={(val) => handleParamChange('colorArm', val)} 
                                 />
+                             </div>
+
+                             <div className="pt-2 border-t border-slate-700/50">
+                                <button
+                                    onClick={handleSaveGalaxy}
+                                    disabled={isSaving}
+                                    className="w-full flex items-center justify-center gap-2 py-2 bg-slate-800 hover:bg-slate-700 text-accent-cyan rounded border border-slate-600 transition-colors"
+                                >
+                                    <SaveIcon />
+                                    <span>{isSaving ? 'Saving...' : 'Save Configuration'}</span>
+                                </button>
                              </div>
                         </div>
                     </div>

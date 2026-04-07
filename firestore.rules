@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: wiki_entries
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required, 1-100 chars)
+    //   - category: string (required, 1-50 chars)
+    //   - content: string (required, 1-50000 chars)
+    //   - tags: list of strings (optional, max 20 items)
+    //   - authorId: string (required, immutable)
+    //   - createdAt: string (required, ISO 8601 date string, immutable)
+    //   - updatedAt: string (required, ISO 8601 date string)
+    //
+    // Collection: galaxies
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - seed: number (required)
+    //   - config: map (required)
+    //   - authorId: string (required, immutable)
+    //   - createdAt: string (required, ISO 8601 date string, immutable)
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.authorId;
+    }
+
+    function uidUnchanged() {
+      return !('authorId' in request.resource.data) || request.resource.data.authorId == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('authorId' in request.resource.data) || request.resource.data.authorId == resource.data.authorId;
+    }
+
+    function createdAtNotModified() {
+      return !('createdAt' in request.resource.data) || request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isValidWikiEntry(data) {
+      return hasRequiredFields(['title', 'category', 'content', 'authorId', 'createdAt', 'updatedAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.category is string && data.category.size() > 0 && data.category.size() <= 50 &&
+             data.content is string && data.content.size() > 0 && data.content.size() <= 50000 &&
+             data.authorId is string && data.authorId.size() > 0 &&
+             (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
+             isValidDateString(data.createdAt) &&
+             isValidDateString(data.updatedAt) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 20));
+    }
+
+    function isValidGalaxySeed(data) {
+      return hasRequiredFields(['name', 'seed', 'config', 'authorId', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.seed is number &&
+             data.config is map &&
+             data.authorId is string && data.authorId.size() > 0 &&
+             (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
+             isValidDateString(data.createdAt);
+    }
+
+    // Wiki Entries
+    match /wiki_entries/{entryId} {
+      // Anyone can read the wiki
+      allow read: if true;
+      // Only authenticated users can create, and they must be the author
+      allow create: if isAuthenticated() && isValidWikiEntry(request.resource.data) && uidUnchanged();
+      // Only the author can update their entry, immutable fields protected
+      allow update: if isDocOwner() && isValidWikiEntry(request.resource.data) && uidNotModified() && createdAtNotModified();
+      // Only the author can delete their entry
+      allow delete: if isDocOwner();
+    }
+
+    // Galaxies
+    match /galaxies/{galaxyId} {
+      // Anyone can read public galaxies
+      allow read: if true;
+      // Only authenticated users can save a galaxy
+      allow create: if isAuthenticated() && isValidGalaxySeed(request.resource.data) && uidUnchanged();
+      // Only the author can update their galaxy, immutable fields protected
+      allow update: if isDocOwner() && isValidGalaxySeed(request.resource.data) && uidNotModified() && createdAtNotModified();
+      // Only the author can delete their galaxy
+      allow delete: if isDocOwner();
+    }
+  }
+}

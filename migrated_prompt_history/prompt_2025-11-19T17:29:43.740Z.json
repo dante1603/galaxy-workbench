@@ -1,0 +1,180 @@
+[
+  {
+    "id": 40,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Mi sistema que tan bien calza con los parámetros de diseño sólid?",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763572888717
+  },
+  {
+    "id": 41,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Refining System Alignment**\n\nI'm currently focused on the user's question about their system's adherence to SOLID principles. I've broken down the user's query and I'm now mapping out how to assess the system's compliance. I'm exploring various methods for evaluating each principle (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion), aiming to give the most accurate and actionable feedback. I plan to use this to deliver a personalized response.\n\n\n**Examining Code Structure**\n\nI'm now assessing the Galaxy Workbench codebase, focusing on adherence to SOLID principles. I've noted the SRP adherence in services and components. The `App.tsx` and `SystemVisualizer.tsx` files are identified as areas for further review. The current analysis points to a need to refactor these to improve separation of concerns, especially for `App.tsx`'s state management, and breaking up `SystemVisualizer` to separate Three.js from React.\n\n\n**Dissecting UI Composition**\n\nI'm now concentrating on how the UI components interact and how they are structured, especially looking at the implications of adding new content types. The hardcoded logic in `SystemVisualizer.tsx` and the `WikiPanel` are areas that require more attention. I'm exploring ways to refactor these, perhaps with a more data-driven approach, to achieve a better balance between flexibility and maintainability.\n\n\n**Analyzing Data Flow**\n\nI'm now diving deeper into the system's data dependencies. I'm focusing on `types.ts` and how interfaces like `WikiItemCardProps` are used. While type-checking mitigates some issues, the `WikiItemCardProps` violates ISP, as the component's dependencies are broader than necessary. I'm also examining the direct imports of `dataService` and `GoogleGenAI` which may require abstraction for DIP. I'm working on a plan for refactoring this.\n\n\n**Addressing Coupling Issues**\n\nI'm now focusing on the coupling between the UI and service implementations. It's evident that direct imports and the instantiation of classes within components, like with `GoogleGenAI` in `PlanetVoxelLab`, are violating good practices. I'm considering suggesting refactoring this area to introduce an abstraction layer. This would make the system more flexible and maintainable, especially if a change to a backend API were needed in the future. I believe this would be a significant improvement.\n\n\n**Crafting the Response**\n\nI'm now formulating a detailed and nuanced response, framed to address the user's initial query about code quality. I've re-read the request and I'm constructing a Spanish-language analysis, focusing on key areas for improvement. This draft incorporates my findings to date, ensuring the response is comprehensive and actionable, and it will be presented in a way to make it helpful. The focus is to provide high quality feedback.\n\n\n**Summarizing Key Improvements**\n\nI'm now putting the finishing touches on my analysis and response. I'm incorporating specifics from the provided code and offering constructive feedback. I've re-assessed the project as an advanced prototype or modular monolith and assigned a SOLID rating of 6/10. I'm highlighting both the strong points (typing) and areas for improvement (component coupling) to guide the user towards more maintainable code.\n\n\n**Synthesizing Feedback**\n\nI'm now integrating the user's requirements with my previous analysis, aiming to structure the feedback logically and address the areas they want to know. I'm focusing on providing clear, specific examples. I'm prioritizing the user's key concerns, which include SOLID principle adherence, maintainability, and code organization, to deliver a valuable analysis. I'm going to make sure the presentation is easy to understand and the recommendations are actionable.\n\n\n**Formulating Response Outline**\n\nI'm currently crafting the structure of the response to ensure clarity and actionable insights. I've decided to adopt a clear framework: a succinct executive summary, followed by a detailed S.O.L.I.D. principle breakdown, specific \"code smells\" analysis, and a concise conclusion. This structure will provide a comprehensive understanding of the current state of the code and specific guidance for improvement. I aim to create a well-organized document that addresses the user's concerns directly.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763572888717,
+    "doneTimestamp": 1763572923503
+  },
+  {
+    "id": 42,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Como Senior Frontend Engineer, he analizado tu arquitectura actual basándome en los archivos proporcionados. Tu sistema se encuentra actualmente en una etapa de **\"Prototipo Avanzado\"**. Tiene una separación lógica funcional (datos, componentes, servicios), pero viola varios principios SOLID, lo cual es normal en fases de desarrollo rápido, pero se convertirá en deuda técnica si escalas el proyecto.\n\nAquí está el desglose de cómo calza tu sistema con SOLID:\n\n### 1. Single Responsibility Principle (SRP) - Principio de Responsabilidad Única\n*Calificación: Media-Baja*\n\n*   **El Problema (types.ts):** Tienes un archivo `types.ts` gigantesco que actúa como un \"God File\". Define desde la física orbital hasta la interfaz de usuario y la lógica de crafteo. Si cambias la lógica de la fauna, tocas el mismo archivo que si cambias la UI del jugador. Esto debería dividirse en dominios (`types/cosmology.ts`, `types/biology.ts`, `types/gameplay.ts`).\n*   **El Problema (App.tsx):** Actúa como un controlador masivo. Gestiona el estado de la UI, notificaciones, el wiki, la selección 3D y la generación. Debería delegar estas responsabilidades a contextos (Context API) o managers específicos.\n*   **El Problema (WikiItemCard.tsx):** Este componente sabe *demasiado*. Sabe cómo renderizar una planta, un animal, un mineral, un arma, etc. Si quieres cambiar cómo se ve una tarjeta de mineral, corres el riesgo de romper la tarjeta de fauna. Debería ser un componente contenedor que despache a subcomponentes específicos (`FaunaCard`, `MineralCard`).\n\n### 2. Open/Closed Principle (OCP) - Abierto/Cerrado\n*Calificación: Media*\n\n*   **Lo Bueno:** Tu sistema de datos (`data/*.ts`) es excelente. Puedes agregar nuevos minerales o fauna simplemente añadiendo objetos a los arrays sin tocar la lógica de generación.\n*   **Lo Malo:** La interfaz de usuario viola OCP. En `SystemVisualizer.tsx` y `WikiItemCard.tsx`, usas grandes bloques `if/else` o `switch` para determinar qué renderizar basado en `item.tipo`.\n    *   *Ejemplo:* Si agregas un nuevo tipo de entidad (ej: \"Nave Espacial\"), tienes que ir a `WikiItemCard`, `SystemVisualizer`, `StarCard`, etc., y agregar un nuevo `case` en el switch.\n    *   *Solución:* Deberías usar un patrón de **Registro de Componentes** o **Diccionarios de Renderizado** donde registres el componente visual asociado al tipo de entidad, eliminando los `switch`.\n\n### 3. Liskov Substitution Principle (LSP) - Sustitución de Liskov\n*Calificación: Alta*\n\n*   TypeScript te está salvando aquí. Tus interfaces (`EntidadBase`, `EntidadJuego`) se utilizan correctamente. Los componentes que esperan una `EntidadJuego` generalmente pueden manejar una `Fauna` o una `Planta` sin explotar, gracias a que comparten las propiedades base (`id`, `nombre`, `descripcion`). El uso de *Discriminated Unions* (usando el campo `tipo`) es una práctica muy sólida en TypeScript.\n\n### 4. Interface Segregation Principle (ISP) - Segregación de Interfaces\n*Calificación: Baja*\n\n*   **El Problema:** Mira las props de `WikiItemCard`:\n    ```typescript\n    type WikiItemCardProps = {\n        allFauna: Fauna[];\n        allPlants: Planta[];\n        allMinerals: Mineral[];\n        // ... y 5 arrays más\n    }\n    ```\n    Este componente depende de *toda* la base de datos del juego. Si solo quieres renderizar una tarjeta de una \"Espada\", no deberías necesitar pasarle la lista de todas las plantas y animales del universo. Esto hace que el componente sea difícil de testear y muy acoplado.\n*   **Solución:** Los componentes deberían pedir solo los datos que necesitan (ej: `WikiItemCard` no debería pedir listas, debería pedir IDs y usar un hook para buscar datos, o recibir solo los datos ya resueltos).\n\n### 5. Dependency Inversion Principle (DIP) - Inversión de Dependencias\n*Calificación: Media-Baja*\n\n*   **El Problema:** Tus componentes de alto nivel (UI) dependen directamente de implementaciones de bajo nivel.\n    *   Ejemplo: `PlanetVoxelLab.tsx` instancia `new GoogleGenAI(...)` directamente dentro del componente. Si mañana quieres cambiar Gemini por OpenAI o un backend propio, tienes que reescribir el componente de React.\n*   **Solución:** La lógica de IA debería estar abstraída en un servicio o hook (`useAIAnalysis()`) que se inyecte o importe. El componente no debería saber qué modelo de IA se está usando, solo que pide una descripción y recibe un string.\n\n### Resumen\nTu código es **funcional, limpio visualmente y moderno**, pero arquitectónicamente es monolítico.\n\n1.  **Modulariza `types.ts`.**\n2.  **Refactoriza `WikiItemCard`** para que sean múltiples componentes pequeños.\n3.  **Extrae la lógica de Three.js** de los componentes de React a hooks personalizados (`useSystemScene`, `useGalaxyScene`) para limpiar la vista.\n4.  **Evita el \"Prop Drilling\"** (pasar `allFauna` por 4 niveles de componentes) usando Hooks que consuman tus servicios directamente o Zustand selectores.\n\n¿Te gustaría que refactorice alguno de estos puntos críticos (por ejemplo, dividir `types.ts` o arreglar el `WikiItemCard`)?",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763572923503,
+    "doneTimestamp": 1763572923504
+  },
+  {
+    "id": 43,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "Haz un roadmap para implementar estas mejoras, con el menor riesgo de romper la funcionalidad, para evitar problemas de memoria lo divirias en pasos, para que cuando termines uno de estos, le pueda copiar el mismo informe al siguiente y solo decirle que haga el siguiente paso ",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763573112713
+  },
+  {
+    "id": 44,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Defining Implementation Steps**\n\nI've been breaking down the user's request into actionable steps. My focus is on implementing the SOLID design principles in the code. I am thinking through the refactoring of `types.ts`, separating the `WikiItemCard` component, and decoupling the Three.js logic from the main components. I am considering best practices for fixing the prop drilling issue. I am exploring potential test cases and considering edge scenarios.\n\n\n**Planning Refactoring Sequence**\n\nI'm now prioritizing the refactoring steps based on risk and impact. I'm focusing on dividing the project into manageable chunks. I will start by refactoring `types.ts`, since it impacts all other components, and then progressively move to splitting `WikiItemCard` and addressing prop-drilling in the data-fetching components. The plan involves refactoring the foundations first, like the types, and then the UI components. I'm also considering the \"strangler fig\" approach for transitioning existing code to a new structure.\n\n\n**Defining Refactoring Order**\n\nI'm solidifying the steps now. Step 1 will be domain modeling to split `types.ts`. I plan on creating a more organized structure to split `types.ts` into individual files. Then, step 2 will be a refactoring of the `WikiItemCard.tsx` component, dividing it into more specific cards. I'm focusing on starting with the foundation and moving toward modular UI. Step 1 focuses on updating types. Step 2 focuses on creating new types and updating imports.\n\n\n**Outlining Data Abstraction**\n\nI'm now focusing on addressing data flow issues. I'm prioritizing step 3, abstracting the data layer within `WikiPanel.tsx` and `PlanetMapEditor.tsx`. My plan is to minimize prop drilling, using either a `DataContext` or custom hooks for data retrieval. I'm examining ways to separate data fetching from component rendering. I am considering potential risks from React Context, and how to mitigate them. I'm also planning step 4 to further decouple logic.\n\n\n**Defining Task Structure**\n\nI've streamlined the plan into three key steps: refining types, splitting the WikiItemCard, and implementing a DataContext. I'm prioritizing types updates, followed by component decomposition, and then state management. I am also working on precise prompts to guide the next phase of work. I am focusing on reviewing the sequence to confirm that it is efficient and maintainable. I'm now certain that the component split should be first.\n\n\n**Prioritizing Safe Refactoring**\n\nI'm now focusing on a safe implementation path. I had a self-correction on my initial approach; keeping `types.ts` as a barrel file initially is not the right approach. I am planning a safe sequence of steps, so step 1 will be the physical file split and import updates. This will be tedious, but it will be better to update all of the files in one iteration. I am thinking ahead to the final roadmap.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763573112713,
+    "doneTimestamp": 1763573136251
+  },
+  {
+    "id": 45,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Esta es una estrategia excelente. Para minimizar el riesgo y la carga cognitiva (tanto tuya como de la IA), aplicaremos el patrón **\"Strangler Fig\" (Higuera Estranguladora)**: refactorizaremos las piezas fundamentales primero y luego las capas superiores, asegurando que la aplicación compile y funcione después de cada paso.\n\nAquí tienes el **Roadmap de Refactorización SOLID**.\n\n---\n\n### 📋 Roadmap de Implementación\n\n#### 🔹 Paso 1: Modularización del Dominio (Types Refactor)\n**Objetivo:** Romper el archivo monolítico `types.ts` en dominios lógicos.\n**Riesgo:** Medio (Errores de importación).\n**Beneficio:** Cumple SRP. Facilita la lectura y evita conflictos de fusión.\n**Acción:** Crear una carpeta `types/` y dividir las interfaces en `cosmology.ts`, `biology.ts`, `gameplay.ts`, `core.ts`. Actualizar referencias.\n\n#### 🔹 Paso 2: Atomización de la UI (WikiItemCard Refactor)\n**Objetivo:** Eliminar el \"God Component\" `WikiItemCard.tsx`.\n**Riesgo:** Bajo (Visual).\n**Beneficio:** Cumple OCP y SRP. Permite editar cómo se ve una \"Planta\" sin riesgo de romper cómo se ve un \"Arma\".\n**Acción:** Crear componentes `FaunaCard`, `FloraCard`, `MineralCard`, etc., y un `WikiCardFactory` que decida cuál renderizar.\n\n#### 🔹 Paso 3: Inyección de Datos y Eliminación de Prop Drilling (Context/Hooks)\n**Objetivo:** Limpiar `App.tsx` y `WikiPanel.tsx` de pasar listas gigantes (`allFauna`, `allPlants`) manualmente.\n**Riesgo:** Medio (Lógica de React).\n**Beneficio:** Cumple ISP y DIP. Los componentes solo pedirán los datos que necesitan.\n**Acción:** Crear un `StaticDataContext` o hooks específicos (`useEntity(id)`) para acceder a los datos estáticos.\n\n#### 🔹 Paso 4: Desacoplamiento de Lógica de Generación\n**Objetivo:** Separar la lógica pura de TypeScript de la lógica de Three.js/React.\n**Riesgo:** Bajo.\n**Beneficio:** Testabilidad y SRP.\n**Acción:** Mover la lógica de selección y filtrado compleja a custom hooks o utilidades puras.\n\n---\n\n### 🚀 Instrucciones para la ejecución\n\nPara empezar, simplemente copia y pega el **Prompt para el Paso 1** en nuestro siguiente chat. Cuando termine y te confirme que el código funciona, harás lo mismo con el Paso 2, y así sucesivamente.\n\n---\n\n### ✂️ PROMPT PARA COPIAR: PASO 1 (Modularización de Tipos)\n\n```text\nHola, vamos a comenzar con el Roadmap de Refactorización SOLID.\n\nPor favor, ejecuta el **Paso 1: Modularización del Dominio**.\n\nInstrucciones:\n1. Crea un directorio `types/` (virtualmente, o usa prefijos de nombre de archivo si no puedes crear carpetas).\n2. Divide el contenido del archivo `types.ts` actual en los siguientes archivos para cumplir con el Principio de Responsabilidad Única (SRP):\n   - `types/core.ts`: Interfaces base (EntidadBase, EntidadJuego, metadatos).\n   - `types/cosmology.ts`: Estrellas, Sistemas, Orbitas, Planetas, Clima.\n   - `types/biology.ts`: Fauna, Flora, Ecosistemas, Biomas.\n   - `types/resources.ts`: Minerales, Materiales, Cristales.\n   - `types/gameplay.ts`: Jugador, Items, Crafteo, Efectos, Especies Inteligentes.\n3. Mantén el archivo `types.ts` original, pero borra su contenido y conviértelo en un \"Barrel File\" (archivo de barril) que exporte todo desde los nuevos archivos (ej: `export * from './types/core';`).\n4. Esto asegura que no rompamos las importaciones existentes en el resto de la aplicación (`import { ... } from './types'`).\n\nObjetivo: Que la aplicación siga funcionando exactamente igual, pero con los tipos organizados.\n```\n\n---\n\n### ✂️ PROMPT PARA COPIAR: PASO 2 (Refactorización UI Wiki)\n\n*(Úsalo solo cuando el Paso 1 esté completo)*\n\n```text\nEl Paso 1 está completo y los tipos están organizados. Ahora ejecuta el **Paso 2: Atomización de la UI**.\n\nInstrucciones:\n1. Analiza el archivo `components/wiki/WikiItemCard.tsx`. Actualmente viola el principio Open/Closed (OCP) porque usa una cadena gigante de `if/else` o renders condicionales para cada tipo de entidad.\n2. Crea pequeños componentes funcionales separados para cada tipo de entidad dentro de una carpeta `components/wiki/cards/` (o nombres de archivo claros):\n   - `FaunaCard.tsx`\n   - `FloraCard.tsx`\n   - `PlanetCard.tsx` (para Biomas/Planetas)\n   - `ItemCard.tsx` (para Materiales/Minerales/Cristales)\n   - `EquipmentCard.tsx` (para Armas/Herramientas)\n   - `SpeciesCard.tsx`\n3. Refactoriza `WikiItemCard.tsx` para que actúe puramente como una \"Fábrica\" o \"Dispatcher\". Debe recibir el `item` y el `type`, y simplemente devolver el componente correcto (ej: `case 'Fauna': return <FaunaCard ... />`).\n4. Asegúrate de pasar solo las props necesarias a cada sub-componente (Interface Segregation Principle).\n\nObjetivo: Código de UI más limpio y mantenible.\n```\n\n---\n\n### ✂️ PROMPT PARA COPIAR: PASO 3 (Contexto de Datos)\n\n*(Úsalo solo cuando el Paso 2 esté completo)*\n\n```text\nEl Paso 2 está listo. Ahora ejecuta el **Paso 3: Inyección de Datos y Eliminación de Prop Drilling**.\n\nInstrucciones:\n1. Actualmente, `App.tsx` obtiene los datos con `useStaticData` y los pasa manualmente a `WikiPanel`, que a su vez los pasa a `WikiItemCard`, y luego a las sub-tarjetas. Esto viola buenas prácticas.\n2. Crea un React Context llamado `StaticDataContext` en `context/StaticDataContext.tsx`.\n3. Mueve la lógica del hook `useStaticData` para que alimente este Provider.\n4. Envuelve la aplicación en `App.tsx` con este Provider.\n5. Actualiza `WikiPanel`, `PlanetMapEditor` y las nuevas tarjetas creadas en el Paso 2 para que consuman los datos usando un hook `useStaticDataContext()` en lugar de recibir listas gigantes por props.\n\nObjetivo: Eliminar la deuda técnica de pasar props innecesarias a través de múltiples niveles.\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763573136251,
+    "doneTimestamp": 1763573136307
+  },
+  {
+    "id": 46,
+    "author": "user",
+    "payload": {
+      "type": "text",
+      "text": "El Paso 1 está completo y los tipos están organizados. Ahora ejecuta el **Paso 2: Atomización de la UI**.\n\nInstrucciones:\n1. Analiza el archivo `components/wiki/WikiItemCard.tsx`. Actualmente viola el principio Open/Closed (OCP) porque usa una cadena gigante de `if/else` o renders condicionales para cada tipo de entidad.\n2. Crea pequeños componentes funcionales separados para cada tipo de entidad dentro de una carpeta `components/wiki/cards/` (o nombres de archivo claros):\n   - `FaunaCard.tsx`\n   - `FloraCard.tsx`\n   - `PlanetCard.tsx` (para Biomas/Planetas)\n   - `ItemCard.tsx` (para Materiales/Minerales/Cristales)\n   - `EquipmentCard.tsx` (para Armas/Herramientas)\n   - `SpeciesCard.tsx`\n3. Refactoriza `WikiItemCard.tsx` para que actúe puramente como una \"Fábrica\" o \"Dispatcher\". Debe recibir el `item` y el `type`, y simplemente devolver el componente correcto (ej: `case 'Fauna': return <FaunaCard ... />`).\n4. Asegúrate de pasar solo las props necesarias a cada sub-componente (Interface Segregation Principle).\n\nObjetivo: Código de UI más limpio y mantenible.\n\nEjecuta el paso 1",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763573244967
+  },
+  {
+    "id": 47,
+    "author": "model",
+    "payload": {
+      "type": "thinking",
+      "text": "**Initiating Atomization**\n\nI'm now fully focused on breaking down the `WikiItemCard.tsx` component. The aim is to create smaller, reusable UI atoms. I've begun to identify the distinct sections within the card, and I'm strategizing how to best encapsulate them into individual components. Currently considering the visual hierarchy and potential shared logic between elements, which is critical to this stage.\n\n\n**Refining Decomposition Strategy**\n\nI'm presently refactoring `WikiItemCard.tsx`, aiming for component specialization within `components/wiki/cards/`. I'm starting to build out individual functional components: `FaunaCard.tsx`, `FloraCard.tsx`, `PlanetCard.tsx`, `ItemCard.tsx`, `EquipmentCard.tsx`, and `SpeciesCard.tsx`, all to be managed by a factory/dispatcher in the main card component. The focus is to keep the look and feel while adhering to SRP, OCP, and ISP principles. I've begun to consider how to move those internal helper components into `components/wiki/cards/SharedCardComponents.tsx`, which should keep things clean and reusable across the sub-cards.\n\n\n**Mapping Render Logic**\n\nI'm now mapping out all the render functions. I'm focusing on the logic within `WikiItemCard.tsx` that determines which content to display based on the `type` prop.  I'm preparing to extract these into dedicated functional components. This includes creating components for `renderPlayer`, `renderFauna`, `renderPlant`, `renderBiome`, `renderSpecies`, `renderWeapon`, `renderTool`, `renderEffect`, `renderMaterial`, `renderMineral`, and `renderCrystal`. I need to figure out the props each will require to render correctly.\n\n\n**Organizing Component Structure**\n\nI've got the sub-card structures in mind now and am focusing on their specific needs. I'm moving forward with `EquipmentCard`, which will handle weapon and tool rendering. Then, `PlayerCard` will focus on displaying player data, and `EffectCard` will be dedicated to effect information.  I'm also paying close attention to the shared logic between material, mineral, and crystal components, and mapping out the required props.  I'll start building the shared utilities in `SharedCardComponents.tsx` soon.\n\n\n**Streamlining Card Logic**\n\nI'm now zeroing in on the refactoring of `WikiItemCard.tsx` itself. The approach involves importing the newly crafted sub-cards and utilizing a switch statement to conditionally render the appropriate card based on the type prop. I'm focusing on ensuring each sub-card receives only the props it specifically requires, even though `WikiItemCard` initially receives a broader set of data. This allows each subcard to adhere more closely to ISP. I'm also preparing the supporting components like `PlayerCard` and `EffectCard` to integrate seamlessly into this structure. I've begun reviewing the shared utilities and how they will be used across the different types.\n\n\n**Addressing Biome Rendering**\n\nI'm now determining how to display Biome information within the wiki. I'll create a `BiomeCard.tsx` component to handle the rendering of `Bioma` data. Given the existing structure, the card will need to correctly receive and display the necessary data. I am thinking through the best way to integrate this new component within the overall logic of `WikiItemCard.tsx`, ensuring proper prop passing and rendering.\n\n\n**Navigating Import Paths**\n\nI'm currently addressing import paths related to the `types.ts` file. Despite an indication that the types are now organized within a `types/core` structure, the provided context only includes a single `types.ts` file. Therefore, to ensure code compatibility with the existing context, I'll continue to import from `../../types`. I'm focusing on ensuring these imports accurately reflect the structures and data available in the current file. This approach keeps the code running while I interpret the user's intent.\n\n\n**Resolving Type Imports**\n\nI'm now fully immersed in the component implementation, starting with `SharedCardComponents.tsx`.  I've added colors, icons and components as described. I'll maintain the existing import from `../../types` as that is the safest. As the code is stable, I'll then move on to create `FaunaCard.tsx`.\n\n\n**Integrating Fauna Card Logic**\n\nI'm presently building `FaunaCard.tsx`, incorporating the logic from `renderFauna` and implementing the \"Edit/Delete\" button functionalities.  I've successfully integrated image handling.  I'm now handling import paths to ensure that the code correctly references the necessary data structures and functions from across the project. I'm focusing on ensuring data is displayed correctly. I'll test it soon to check for errors.\n\n\n**Structuring Card Components**\n\nI'm now integrating the logic from `renderWeapon`, `renderTool`, and `renderEffect` into their respective sub-components, namely `WeaponCard.tsx`, `ToolCard.tsx`, and `EffectCard.tsx`.  The aim is to keep the `WikiItemCard.tsx` focused on acting as a factory, delegating the rendering responsibilities based on the `type` prop.  I'm focusing on minimizing shared logic while keeping a consistent visual style, which is achieved by pushing shared logic to `SharedCardComponents.tsx`. The \"Edit/Delete\" button logic is consistently handled within each sub-card.\n\n\n**Optimizing Shared Components**\n\nI'm currently focused on refactoring common \"Title/Desc\" sections in `WikiItemCard`. The plan is to create a shared component within `SharedCardComponents.tsx` to reduce code duplication and enhance reusability. I'm carefully analyzing the shared logic and how each sub-card can efficiently leverage this new component. This should also help improve readability.\n\n\n**Building Sub-Component Files**\n\nI'm now fully immersed in developing the sub-components listed. I'll maintain consistency with the provided naming conventions. `SpeciesCard` will handle player-related data. The edit/delete logic will be implemented as well. I'm focusing on ensuring each sub-card correctly receives its specific data requirements to maintain the modular design.\n\n\n**Creating Specialized Components**\n\nI'm now separating `PlanetCard` and `SpeciesCard`, and implementing a switch statement within `WikiItemCard.tsx` to handle conditional rendering. The strategy involves passing only the necessary data to each sub-card. I'm prioritizing clean imports and a modular design, ensuring each card gets exactly what it needs.\n\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763573244967,
+    "doneTimestamp": 1763573289324
+  },
+  {
+    "id": 48,
+    "author": "model",
+    "payload": {
+      "type": "text",
+      "text": "Here is the implementation of Step 2: **UI Atomization**. This refactor breaks down the monolithic `WikiItemCard` into specialized components and a shared utility file, implementing the Factory pattern.\n\n",
+      "cMarkNode": {}
+    },
+    "createdTimestamp": 1763573289324,
+    "doneTimestamp": 1763573289324
+  },
+  {
+    "id": 49,
+    "author": "model",
+    "payload": {
+      "type": "generationTable",
+      "entries": [
+        {
+          "path": "components/wiki/cards/SharedCardComponents.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Create shared UI components and constants for Wiki cards"
+        },
+        {
+          "path": "components/wiki/cards/FaunaCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Fauna entities"
+        },
+        {
+          "path": "components/wiki/cards/FloraCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Flora entities"
+        },
+        {
+          "path": "components/wiki/cards/PlanetCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Biomes (referred to as PlanetCard in prompt)"
+        },
+        {
+          "path": "components/wiki/cards/SpeciesCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Intelligent Species"
+        },
+        {
+          "path": "components/wiki/cards/ItemCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Materials, Minerals and Crystals"
+        },
+        {
+          "path": "components/wiki/cards/EquipmentCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Weapons and Tools"
+        },
+        {
+          "path": "components/wiki/cards/PlayerCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Player Entity"
+        },
+        {
+          "path": "components/wiki/cards/EffectCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Specialized card for Game Effects"
+        },
+        {
+          "path": "components/wiki/WikiItemCard.tsx",
+          "generationType": 1,
+          "isDone": true,
+          "description": "Refactor to Factory Pattern using specialized cards"
+        }
+      ]
+    },
+    "createdTimestamp": 1763573289325,
+    "doneTimestamp": 1763573312450
+  },
+  {
+    "id": 51,
+    "author": "user",
+    "payload": {
+      "type": "restored",
+      "snapshotTitle": "Code assistant changes for: El Paso 1 está completo y los tipos están organizados. Ahora ejecuta el **Paso 2: Atomización de la UI**.\n\nInstrucciones:\n1. Analiza el archivo `components/wiki/WikiItemCard.tsx`. Actualmente viola el principio Open/Closed (OCP) porque usa una cadena gigante de `if/else` o renders condicionales para cada tipo de entidad.\n2. Crea pequeños componentes funcionales separados para cada tipo de entidad dentro de una carpeta `components/wiki/cards/` (o nombres de archivo claros):\n   - `FaunaCard.tsx`\n   - `FloraCard.tsx`\n   - `PlanetCard.tsx` (para Biomas/Planetas)\n   - `ItemCard.tsx` (para Materiales/Minerales/Cristales)\n   - `EquipmentCard.tsx` (para Armas/Herramientas)\n   - `SpeciesCard.tsx`\n3. Refactoriza `WikiItemCard.tsx` para que actúe puramente como una \"Fábrica\" o \"Dispatcher\". Debe recibir el `item` y el `type`, y simplemente devolver el componente correcto (ej: `case 'Fauna': return <FaunaCard ... />`).\n4. Asegúrate de pasar solo las props necesarias a cada sub-componente (Interface Segregation Principle).\n\nObjetivo: Código de UI más limpio y mantenible.\n\nEjecuta el paso 1",
+      "done": {}
+    },
+    "createdTimestamp": 1763573383272,
+    "doneTimestamp": 1763573383272
+  }
+]

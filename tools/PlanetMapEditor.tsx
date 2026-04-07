@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useWorkbenchStore } from '../state/workbenchStore';
 import { useStaticDataCtx } from '../context/StaticDataContext';
-import type { ObjetoPlaneta, Bioma, Cristal, ObjetoSubOrbitalPlaneta, Fauna, ArquetipoCristal, Planta, Mineral, Material, TipoCristal, Ecosistema } from '../types';
-import { PlanetTypeBadge, StatItem, CrystalIcon, CRYSTAL_COLORS } from '../components/starcards/common';
+import type { ObjetoPlaneta, Bioma, ObjetoSubOrbitalPlaneta, Fauna, ArquetipoCristal, Planta, Mineral, TipoCristal, Cristal } from '../types';
+import { PlanetTypeBadge, StatItem } from '../components/starcards/common';
 import WikiItemCard from '../components/wiki/WikiItemCard';
 
 
@@ -74,7 +74,7 @@ const ResourceListButton: React.FC<ResourceListButtonProps> = ({ title, items, o
         );
     }
 
-    const getItemName = (item: any): string => {
+    const getItemName = (item: { nombre?: string; tipo?: string }): string => {
         if (item.nombre) return item.nombre;
         if (item.tipo && allCrystals) { // It's a crystal instance
             const archetype = allCrystals.find(c => c.tipoCristal === item.tipo);
@@ -110,7 +110,7 @@ const PlanetMapEditor: React.FC<PlanetMapEditorProps> = ({ onShowInWiki }) => {
   const { systems, selectedPlanetId, setActiveTool } = useWorkbenchStore();
   const { fauna: allFauna, crystals: allCrystals, plants: allPlants, minerals: allMinerals, biomes: allBiomes, handleUpdateSpeciesImage } = useStaticDataCtx();
   
-  const [detailViewInfo, setDetailViewInfo] = useState<{title: string, items: any[], wikiType: string} | null>(null);
+  const [detailViewInfo, setDetailViewInfo] = useState<{title: string, items: { id?: string; tipo?: string; nombre?: string; [key: string]: unknown }[], wikiType: string} | null>(null);
 
   const selectedPlanet = systems
     .flatMap(s => s.orbitas.flatMap(o => o.objetos))
@@ -121,12 +121,12 @@ const PlanetMapEditor: React.FC<PlanetMapEditorProps> = ({ onShowInWiki }) => {
     
     // --- STATE 2: List view of a resource category (shows full WikiItemCards) ---
     if (detailViewInfo) {
-        const getWikiId = (item: any, type: string) => {
+        const getWikiId = (item: { id?: string; tipo?: string }, type: string) => {
             if (type === 'Cristal' && item.tipo) {
                 // The item here should already be the enriched archetype
                 return item.id || allCrystals.find(c => c.tipoCristal === item.tipo)?.id || item.tipo;
             }
-            return item.id;
+            return item.id || '';
         };
 
         return (
@@ -147,8 +147,8 @@ const PlanetMapEditor: React.FC<PlanetMapEditorProps> = ({ onShowInWiki }) => {
                             tabIndex={0}
                         >
                             <WikiItemCard
-                                item={item}
-                                type={detailViewInfo.wikiType as any}
+                                item={item as unknown as Bioma | Fauna | Planta | Mineral | Cristal}
+                                type={detailViewInfo.wikiType as 'Bioma' | 'Fauna' | 'Planta' | 'Mineral' | 'Cristal'}
                                 onUpdateSpeciesImage={handleUpdateSpeciesImage}
                                 onEdit={() => {}} // Read-only in this view
                                 onDelete={() => {}} 

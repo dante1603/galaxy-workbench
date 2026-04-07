@@ -1,3 +1,4 @@
+
 # GALAXY WORKBENCH: MANIFIESTO MAESTRO DEL PROYECTO ODYSSEY
 
 **Propósito del documento:**
@@ -7,13 +8,13 @@ Este manifiesto establece la visión total, los principios rectores, las capas d
 
 ## 1. Visión General del Proyecto
 
-**Odyssey** es un simulador de galaxias vivas tipo **Sandbox Voxel**, jugado desde la perspectiva de un **parásito consciente** que controla cuerpos alienígenas.
+**Odyssey** es un simulador de galaxias vivas tipo **Sandbox Voxel**, jugado desde la perspectiva de un **parásito consciente** (Simbionte Neural) que controla cuerpos alienígenas.
 
 El proyecto combina:
 *   **Ciencia Ficción Soft + Fantasía:** Admitimos elementos fantásticos (poderes, misticismo, energía vital) siempre que tengan una coherencia interna o biológica, similar a la mezcla de géneros en *Star Wars* o *Dragon Ball*.
 *   **Universo Voxel Esférico:** A diferencia de mundos planos (Minecraft), generamos planetas esféricos completos, sistemas estelares y galaxias enteras.
 *   **Exploración en múltiples escalas:** Galaxia → Sistema → Planeta → Bioma → Criatura.
-*   **El Parásito:** La interfaz de usuario es diegética; eres una entidad que "hackea" biología y tecnología.
+*   **El Parásito:** La interfaz de usuario es diegética; eres una entidad que "hackea" la biología del huésped y la tecnología.
 
 **Filosofía Central:**
 Cada nivel del cosmos debe ser legible, interpretable y profundo. Nada se genera "porque sí"; cada resultado proviene de una cadena lógica basada en física simplificada + biología procedural + narrativa ecosistémica.
@@ -52,18 +53,20 @@ Odyssey opera como un continuo interconectado:
 
 ## 3. Mecánicas Nucleares
 
-### 3.1. El Parásito (UI Viviente)
-El jugador no es el organismo, es el parásito.
-*   **Control:** Toma de cuerpos alienígenas como avatares.
-*   **Evolución:** Mejoras de HUD y habilidades intrínsecas.
-*   **Diegesis:** La interfaz gráfica es la visión aumentada del parásito analizando el entorno.
+### 3.1. El Protocolo Parásito (Core Gameplay)
+**Regla de Oro: NO EXISTEN HUMANOS.**
+El universo está poblado únicamente por especies alienígenas.
+*   **Identidad Real:** El jugador NO es el alienígena que se ve en pantalla. El jugador es un **Parásito Simbionte** (similar a una babosa cerebral) que se adhiere a la cabeza del anfitrión.
+*   **Mecánica de Muerte:** Cuando la "Salud del Huésped" llega a 0, el cuerpo muere. El Parásito es expulsado y debe encontrar un nuevo anfitrión o reaparecer en un cuerpo clonado/nuevo.
+*   **Interfaz Diegética (HUD):** Menús, mapas y chat no son "del juego", son proyecciones neuronales que el parásito inyecta directamente en el nervio óptico del huésped controlado.
+*   **Multijugador:** Es una red psíquica entre parásitos conectando a sus huéspedes.
 
 ### 3.2. Especies Jugables (Huéspedes)
-Cada especie es una "clase jugable" nativa de un bioma.
+Cada especie es una "clase jugable" nativa de un bioma, actuando como un **traje biológico desechable** para el parásito.
 *   **Caracoles Solares:** Fotosintéticos, soporte.
 *   **Pangolines del Desierto:** Tanques, artesanos.
 *   **Especies Oceánicas/Voladoras:** Exploración tridimensional.
-*   *Nota:* Cada una posee naves, estética y habilidades únicas.
+*   *Nota:* El parásito hereda las estadísticas físicas del huésped, pero mantiene su propia progresión mental (niveles de parásito, recetas aprendidas).
 
 ### 3.3. Supervivencia y Construcción
 *   Construcción modular en naves, bases y equipamiento.

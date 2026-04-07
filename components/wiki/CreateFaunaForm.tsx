@@ -1,16 +1,15 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { useStaticDataCtx } from '../../context/StaticDataContext';
 import { 
     Fauna, 
-    ReinoAnimal, Dieta, TamanoFauna, ComportamientoSocial, Locomocion, 
-    PlanCorporal, Cobertura, Sentido, TipoExtremidadesDelanteras, Temperamento, RolCombate, TagUtilidad, TagUtilidadCola,
     TODAS_DIETAS, TODOS_REINOS_ANIMALES, TODOS_PLANES_CORPORALES, TODAS_COBERTURAS, TODOS_SENTIDOS,
     TODOS_TAMANOS_FAUNA, TODOS_COMPORTAMIENTOS_SOCIALES, TODAS_LOCOMOCIONES, TODAS_EXTREMIDADES_DELANTERAS,
     TODOS_TAGS_UTILIDAD_COLA, TODOS_TEMPERAMENTOS, TODOS_ROLES_COMBATE, TODOS_TAGS_UTILIDAD
 } from '../../types';
 import { id as generateId } from '../../utils/helpers';
+import SimpleCropper from '../ui/SimpleCropper';
 
 interface CreateFaunaFormProps {
     onClose: () => void;
@@ -52,22 +51,16 @@ const defaultFauna: Omit<Fauna, 'id' | 'estado' | 'version' | 'fechaCreacion' | 
     urlImagen: null
 };
 
-const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result as string;
-            const base64Data = base64String.split(',')[1];
-            resolve({
-                inlineData: {
-                    data: base64Data,
-                    mimeType: file.type
-                }
-            });
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+// Helper to convert base64 back to blob/file if needed for AI (though we send base64 directly)
+const fileToGenerativePart = async (base64Data: string): Promise<{ inlineData: { data: string; mimeType: string } }> => {
+    // Remove header if present
+    const cleanBase64 = base64Data.split(',')[1];
+    return {
+        inlineData: {
+            data: cleanBase64,
+            mimeType: 'image/jpeg'
+        }
+    };
 };
 
 const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUpdate, initialData }) => {
@@ -86,9 +79,13 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
     });
 
     const [morphologyText, setMorphologyText] = useState('');
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    
+    // Cropper State
+    const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
+    
     const [isLoading, setIsLoading] = useState(false);
-    const [loadingStage, setLoadingStage] = useState('');
+    const [, setLoadingStage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,19 +110,33 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setSelectedFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, urlImagen: reader.result as string }));
+                // Instead of setting directly, open cropper
+                setTempImageUrl(reader.result as string);
+                setIsCropperOpen(true);
+                // Reset input value so same file can be selected again if cancelled
+                if (fileInputRef.current) fileInputRef.current.value = '';
             };
             reader.readAsDataURL(file);
         }
     };
 
+    const handleCropConfirm = (croppedBase64: string) => {
+        setFormData(prev => ({ ...prev, urlImagen: croppedBase64 }));
+        setTempImageUrl(null);
+        setIsCropperOpen(false);
+    };
+
+    const handleCropCancel = () => {
+        setTempImageUrl(null);
+        setIsCropperOpen(false);
+    };
+
     const handleGenerate = async () => {
         const textInput = morphologyText.trim() || formData.descripcion.trim() || formData.nombre.trim();
 
-        if (!selectedFile && !textInput) {
+        if (!formData.urlImagen && !textInput) {
             setError("Por favor, sube una imagen o escribe una descripción/nombre para generar.");
             return;
         }
@@ -136,7 +147,7 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
 
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            setLoadingStage(selectedFile ? 'Analizando imagen...' : 'Generando datos...');
+            setLoadingStage(formData.urlImagen ? 'Analizando imagen...' : 'Generando datos...');
 
              const dropSchema: Schema = {
                 type: Type.OBJECT,
@@ -152,9 +163,9 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
             const faunaSchema: Schema = {
                 type: Type.OBJECT,
                 properties: {
-                    analisisMorfologico: { type: Type.STRING, description: "Análisis biológico detallado." },
+                    analisisMorfologico: { type: Type.STRING, description: "Análisis biológico detallado y libre." },
                     nombre: { type: Type.STRING },
-                    descripcion: { type: Type.STRING },
+                    descripcion: { type: Type.STRING, description: "Descripción concisa para ficha de juego (lore). Máximo 300 caracteres." },
                     tags: { type: Type.ARRAY, items: { type: Type.STRING } },
                     dieta: { type: Type.STRING, enum: TODAS_DIETAS as string[] },
                     reino: { type: Type.STRING, enum: TODOS_REINOS_ANIMALES as string[] },
@@ -193,17 +204,17 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
             };
 
             let contents = [];
-            // Updated prompt to explicitly allow new requested fauna types
-            let promptText = "Actúa como un experto en Xenobiología, Paleontología y Ciencia Ficción. Analiza la entrada y genera una criatura completa. Soporta y detecta: Fauna marina prehistórica (tipo Dunkleosteus, Megalodon), voladores gigantes (Pterosaurios, Insectos Carboníferos), fauna espacial (Ballenas de vacío, Gusanos de asteroides) y monstruos sci-fi (tipo Rancor, Sarlacc, Gusanos de Arena). Si es fauna espacial, usa locomoción 'espacial' o 'levitacion'. Si es gusano, usa reino 'verme'. Si es robot, usa 'mecanoide'. IMPORTANTE: Usa el esquema JSON provisto estrictamente.";
+            // Prompt actualizado con limitación estricta para la descripción final
+            let promptText = "Actúa como un experto en Xenobiología. Analiza la entrada y genera una criatura. Soporta: Fauna marina prehistórica, voladores gigantes, fauna espacial, mecanoide y monstruos sci-fi. Si es fauna espacial, usa locomoción 'espacial'. Si es gusano, usa reino 'verme'. IMPORTANTE: La 'descripcion' final debe ser muy concisa (máximo 300 caracteres), ideal para una ficha de RPG.";
             
-            if (selectedFile) {
-                const imagePart = await fileToGenerativePart(selectedFile);
-                promptText += "Usa la imagen para determinar el Plan Corporal (geometría) y Cobertura (textura) exactos. ";
-                if (textInput) promptText += `Contexto: "${textInput}".`;
+            if (formData.urlImagen) {
+                const imagePart = await fileToGenerativePart(formData.urlImagen);
+                promptText += " Usa la imagen para determinar morfología y textura exactas. ";
+                if (textInput) promptText += `Contexto adicional: "${textInput}".`;
                 
                 contents = [{ role: 'user', parts: [imagePart, { text: promptText }] }];
             } else {
-                promptText += `Basado en: "${textInput}". Inventa detalles biológicos coherentes con el arquetipo solicitado.`;
+                promptText += ` Basado en: "${textInput}". Inventa detalles biológicos coherentes.`;
                 contents = [{ role: 'user', parts: [{ text: promptText }] }];
             }
 
@@ -219,7 +230,7 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
             const generatedData = JSON.parse(jsonResponse.text || '{}');
             const { analisisMorfologico, ...finalData } = generatedData;
             
-            if (selectedFile && !textInput) {
+            if (formData.urlImagen && !textInput) {
                 setMorphologyText(analisisMorfologico || "Análisis completado.");
             }
 
@@ -229,12 +240,12 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
                 id: prev.id,
                 fechaCreacion: prev.fechaCreacion,
                 fechaActualizacion: new Date().toISOString(),
-                urlImagen: prev.urlImagen
+                urlImagen: prev.urlImagen // Keep the image user uploaded
             }));
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Generation error:", err);
-            setError(err.message || "Unknown error");
+            setError(err instanceof Error ? err.message : "Unknown error");
         } finally {
             setIsLoading(false);
         }
@@ -249,10 +260,20 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
         onClose();
     };
 
-    const canGenerate = !!(selectedFile || morphologyText.trim() || formData.descripcion.trim() || formData.nombre.trim());
+    const canGenerate = !!(formData.urlImagen || morphologyText.trim() || formData.descripcion.trim() || formData.nombre.trim());
 
     return (
-        <div className="flex flex-col h-full bg-space-mid text-slate-200">
+        <div className="flex flex-col h-full bg-space-mid text-slate-200 relative">
+            
+            {/* CROPPER MODAL */}
+            {isCropperOpen && tempImageUrl && (
+                <SimpleCropper 
+                    imageUrl={tempImageUrl} 
+                    onCancel={handleCropCancel} 
+                    onConfirm={handleCropConfirm} 
+                />
+            )}
+
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 
                 {/* AI GENERATOR */}
@@ -260,17 +281,22 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="text-sm font-bold text-accent-cyan uppercase tracking-wider">Xenobiología IA</h3>
                         <span className="text-[10px] text-slate-500 uppercase bg-slate-800 px-2 py-0.5 rounded">
-                            {selectedFile ? "Análisis Visual" : "Generación Textual"}
+                            {formData.urlImagen ? "Análisis Visual" : "Generación Textual"}
                         </span>
                     </div>
                     
                     <div className="flex gap-3 mb-3">
                         <div 
                             onClick={() => fileInputRef.current?.click()}
-                            className={`w-20 h-20 flex-shrink-0 bg-space-dark border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden group ${selectedFile ? 'border-accent-cyan' : 'border-slate-600 hover:border-slate-400'}`}
+                            className={`w-20 h-20 flex-shrink-0 bg-space-dark border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer transition-colors relative overflow-hidden group ${formData.urlImagen ? 'border-accent-cyan' : 'border-slate-600 hover:border-slate-400'}`}
                         >
                             {formData.urlImagen ? (
-                                <img src={formData.urlImagen} alt="Ref" className="w-full h-full object-cover" />
+                                <>
+                                    <img src={formData.urlImagen} alt="Ref" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs uppercase font-bold text-white">
+                                        Cambiar
+                                    </div>
+                                </>
                             ) : (
                                 <span className="text-xl block">📷</span>
                             )}
@@ -286,20 +312,35 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
                         />
                     </div>
 
-                    <button
-                        onClick={handleGenerate}
-                        disabled={isLoading || !canGenerate}
-                        className={`w-full py-2 rounded-md flex items-center justify-center space-x-2 transition-all ${
-                            canGenerate 
-                            ? 'bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/50 hover:bg-accent-cyan/30' 
-                            : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                        }`}
-                    >
-                        {isLoading ? <span className="animate-spin">⟳</span> : <span>✨</span>}
-                        <span className="text-xs font-bold uppercase tracking-wide">
-                            {isLoading ? "Sintetizando ADN..." : "Generar Especimen"}
-                        </span>
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleGenerate}
+                            disabled={isLoading || !canGenerate}
+                            className={`flex-1 py-2 rounded-md flex items-center justify-center space-x-2 transition-all ${
+                                canGenerate 
+                                ? 'bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/50 hover:bg-accent-cyan/30' 
+                                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                            }`}
+                        >
+                            {isLoading ? <span className="animate-spin">⟳</span> : <span>✨</span>}
+                            <span className="text-xs font-bold uppercase tracking-wide">
+                                {isLoading ? "Sintetizando..." : "Generar"}
+                            </span>
+                        </button>
+
+                        {isFormComplete && (
+                            <button
+                                onClick={handleSubmit}
+                                className="flex-1 py-2 rounded-md flex items-center justify-center space-x-2 transition-all bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 hover:bg-emerald-600/30"
+                            >
+                                <span>💾</span>
+                                <span className="text-xs font-bold uppercase tracking-wide">
+                                    Guardar
+                                </span>
+                            </button>
+                        )}
+                    </div>
+                    
                     {error && <p className="text-xs text-red-400 mt-2 text-center">{error}</p>}
                 </div>
 
@@ -316,11 +357,14 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
                         name="descripcion"
                         value={formData.descripcion}
                         onChange={handleInputChange}
-                        maxLength={300}
+                        maxLength={400}
                         rows={3}
                         placeholder="Descripción biológica..."
                         className="w-full bg-space-dark border border-slate-600 rounded px-3 py-2 text-white text-sm resize-none"
                     />
+                     <div className="text-[10px] text-right text-slate-500">
+                        {formData.descripcion.length}/400
+                    </div>
                 </div>
 
                 {/* TAXONOMY & MORPHOLOGY */}
@@ -378,7 +422,7 @@ const CreateFaunaForm: React.FC<CreateFaunaFormProps> = ({ onClose, onSave, onUp
                                 <label className="block text-slate-500 mb-1 capitalize">{stat.replace('rango', 'R.')}</label>
                                 <input 
                                     type="number" 
-                                    value={(formData.stats as any)[stat]} 
+                                    value={(formData.stats as Record<string, number>)[stat]} 
                                     onChange={(e) => setFormData({...formData, stats: {...formData.stats, [stat]: parseInt(e.target.value)}})} 
                                     className="w-full bg-space-dark border border-slate-600 rounded px-2 py-1 text-white font-mono" 
                                 />
